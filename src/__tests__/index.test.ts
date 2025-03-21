@@ -2,7 +2,7 @@ import axios, { AxiosStatic } from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { McpError } from "@modelcontextprotocol/sdk/types.js";
 import { MockAnkiConnect } from "./helpers/mockAnkiConnect.js";
-import { testConfig } from "../config.js";
+import { testConfig } from "../config/index.js";
 import {
 	cleanupTestResources,
 	createTestBasicNote,

@@ -1,5 +1,5 @@
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
-import { testConfig } from "../../config.js";
+import { testConfig } from "../../config/index.js";
 
 interface AnkiNote {
 	id: number;

@@ -1,6 +1,6 @@
 import { McpError } from "@modelcontextprotocol/sdk/types.js";
 import { MockAnkiConnect } from "./mockAnkiConnect.js";
-import { testConfig } from "../../config.js";
+import { testConfig } from "../../config/index.js";
 
 export interface TestDeck {
 	name: string;
