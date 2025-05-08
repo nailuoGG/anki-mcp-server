@@ -279,6 +279,9 @@ export class AnkiClient {
 		modelName: string;
 		fields: Record<string, string>;
 		tags?: string[];
+		options?: {
+			allowDuplicate?: boolean;
+		};
 	}): Promise<number | null> {
 		try {
 			return await this.executeWithRetry(() =>
@@ -289,7 +292,7 @@ export class AnkiClient {
 						fields: params.fields,
 						tags: params.tags || [],
 						options: {
-							allowDuplicate: false,
+							allowDuplicate: params.options?.allowDuplicate || false,
 							duplicateScope: "deck",
 						},
 					},

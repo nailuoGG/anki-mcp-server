@@ -59,6 +59,10 @@ export class McpToolHandler {
 								type: "string",
 								description: "Name of the note type/model",
 							},
+							includeCss: {
+								type: "boolean",
+								description: "Whether to include CSS information",
+							},
 						},
 						required: ["modelName"],
 					},
@@ -83,6 +87,10 @@ export class McpToolHandler {
 								description:
 									"Custom fields for the note(get note type info first)",
 								additionalProperties: true,
+							},
+							allowDuplicate: {
+								type: "boolean",
+								description: "Whether to allow duplicate notes",
 							},
 							tags: {
 								type: "array",
@@ -126,6 +134,10 @@ export class McpToolHandler {
 									},
 									required: ["type", "deck", "fields"],
 								},
+							},
+							allowDuplicate: {
+								type: "boolean",
+								description: "Whether to allow duplicate notes",
 							},
 							stopOnError: {
 								type: "boolean",
@@ -465,7 +477,10 @@ export class McpToolHandler {
 	/**
 	 * Get note type info
 	 */
-	private async getNoteTypeInfo(args: { modelName: string }): Promise<{
+	private async getNoteTypeInfo(args: {
+		modelName: string;
+		includeCss?: boolean;
+	}): Promise<{
 		content: {
 			type: string;
 			text: string;
@@ -485,26 +500,27 @@ export class McpToolHandler {
 		}
 
 		// Get model information in parallel
-		const [fields, templates, styling] = await Promise.all([
+		const [fields, templates] = await Promise.all([
 			this.ankiClient.getModelFieldNames(args.modelName),
 			this.ankiClient.getModelTemplates(args.modelName),
-			this.ankiClient.getModelStyling(args.modelName),
 		]);
+
+		const result: any = {
+			modelName: args.modelName,
+			fields,
+			templates,
+		};
+
+		if (args.includeCss) {
+			const styling = await this.ankiClient.getModelStyling(args.modelName);
+			result.css = styling.css;
+		}
 
 		return {
 			content: [
 				{
 					type: "text",
-					text: JSON.stringify(
-						{
-							modelName: args.modelName,
-							fields,
-							templates,
-							css: styling.css,
-						},
-						null,
-						2,
-					),
+					text: JSON.stringify(result, null, 2),
 				},
 			],
 		};
@@ -517,6 +533,7 @@ export class McpToolHandler {
 		type: string;
 		deck: string;
 		fields: Record<string, string>;
+		allowDuplicate?: boolean;
 		tags?: string[];
 	}): Promise<{
 		content: {
@@ -574,6 +591,9 @@ export class McpToolHandler {
 			modelName: args.type,
 			fields: normalizedFields,
 			tags: args.tags || [],
+			options: {
+				allowDuplicate: args.allowDuplicate || false,
+			},
 		});
 
 		return {
@@ -673,6 +693,7 @@ export class McpToolHandler {
 			fields: Record<string, string>;
 			tags?: string[];
 		}[];
+		allowDuplicate?: boolean;
 		stopOnError?: boolean;
 	}): Promise<{
 		content: {
@@ -724,6 +745,9 @@ export class McpToolHandler {
 					modelName: note.type,
 					fields: normalizedFields,
 					tags: note.tags || [],
+					options: {
+						allowDuplicate: args.allowDuplicate || false,
+					},
 				});
 
 				results.push({
