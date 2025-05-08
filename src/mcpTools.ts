@@ -70,7 +70,7 @@ export class McpToolHandler {
 				{
 					name: "create_note",
 					description:
-						"Create a new note (LLM Should get note type info first)",
+						"Create a new note (LLM Should call get_note_type_info first)",
 					inputSchema: {
 						type: "object",
 						properties: {
@@ -105,7 +105,8 @@ export class McpToolHandler {
 				},
 				{
 					name: "batch_create_notes",
-					description: "Create multiple notes at once",
+					description:
+						"Create multiple notes at once (llm should call get_note_type_info first )",
 					inputSchema: {
 						type: "object",
 						properties: {
@@ -568,18 +569,8 @@ export class McpToolHandler {
 			);
 		}
 
-		// Validate fields
-		const modelFields = await this.ankiClient.getModelFieldNames(args.type);
-		for (const field of modelFields) {
-			if (!args.fields[field] && !args.fields[field.toLowerCase()]) {
-				throw new McpError(
-					ErrorCode.InvalidParams,
-					`Missing required field: ${field}`,
-				);
-			}
-		}
-
 		// Normalize field names to match the model
+		const modelFields = await this.ankiClient.getModelFieldNames(args.type);
 		const normalizedFields: Record<string, string> = {};
 		for (const field of modelFields) {
 			normalizedFields[field] =
@@ -648,11 +639,10 @@ export class McpToolHandler {
 		// Get model fields
 		const modelFields = await this.ankiClient.getModelFieldNames(modelName);
 
-		// Validate fields
+		// Normalize fields: all fields can be empty
 		const fields: Record<string, string> = {};
 		for (const field of modelFields) {
-			const fieldValue = args[field.toLowerCase()] || args[field] || "";
-			fields[field] = fieldValue;
+			fields[field] = args[field.toLowerCase()] || args[field] || "";
 		}
 
 		// Extract tags if provided
@@ -733,7 +723,7 @@ export class McpToolHandler {
 				// Get model fields
 				const modelFields = await this.ankiClient.getModelFieldNames(note.type);
 
-				// Normalize field names to match the model
+				// Normalize field names to match the model, all fields can be empty
 				const normalizedFields: Record<string, string> = {};
 				for (const field of modelFields) {
 					normalizedFields[field] =
