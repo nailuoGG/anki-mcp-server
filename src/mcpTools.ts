@@ -33,6 +33,10 @@ import {
 	ForgetCardsTool,
 	RelearnCardsTool,
 } from "./tools/cardTools.js";
+import {
+	LearningProgressAnalyzerTool,
+	KnowledgeConnectionAnalyzerTool,
+} from "./tools/analysisTools.js";
 
 /**
  * Handles all MCP tool operations for Anki
@@ -80,6 +84,10 @@ export class McpToolHandler {
 		this.register(new UnsuspendCardsTool(this.ankiClient));
 		this.register(new ForgetCardsTool(this.ankiClient));
 		this.register(new RelearnCardsTool(this.ankiClient));
+
+		// Analysis tools
+		this.register(new LearningProgressAnalyzerTool(this.ankiClient));
+		this.register(new KnowledgeConnectionAnalyzerTool(this.ankiClient));
 	}
 
 	/**

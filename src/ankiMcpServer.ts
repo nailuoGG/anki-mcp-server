@@ -6,6 +6,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
 	CallToolRequestSchema,
 	ErrorCode,
+	GetPromptRequestSchema,
+	ListPromptsRequestSchema,
 	ListResourcesRequestSchema,
 	ListResourceTemplatesRequestSchema,
 	ListToolsRequestSchema,
@@ -15,20 +17,23 @@ import {
 
 import { McpResourceHandler } from "./mcpResource.js";
 import { McpToolHandler } from "./mcpTools.js";
+import { McpPromptHandler } from "./mcpPrompts.js";
 import { AnkiClient } from "./utils.js";
 import { MCP_VERSION } from "./_version.js";
 
 /**
  * AnkiMcpServer is the main server class that handles MCP protocol communication
+ * Integrates three major functional modules: tools, resources, and prompt templates
  */
 export class AnkiMcpServer {
 	private server: Server;
 	private resourceHandler: McpResourceHandler;
 	private toolHandler: McpToolHandler;
+	private promptHandler: McpPromptHandler;
 	private ankiClient: AnkiClient;
 
 	/**
-	 * Constructor
+	 * Constructor - Initialize server and various handlers
 	 */
 	constructor() {
 		this.server = new Server(
@@ -40,6 +45,7 @@ export class AnkiMcpServer {
 				capabilities: {
 					tools: {},
 					resources: {},
+					prompts: {},
 				},
 			},
 		);
@@ -47,6 +53,7 @@ export class AnkiMcpServer {
 		this.ankiClient = new AnkiClient();
 		this.resourceHandler = new McpResourceHandler(this.ankiClient);
 		this.toolHandler = new McpToolHandler();
+		this.promptHandler = new McpPromptHandler(this.ankiClient);
 
 		this.setupHandlers();
 
@@ -58,7 +65,8 @@ export class AnkiMcpServer {
 	}
 
 	/**
-	 * Setup all request handlers
+	 * Set up all request handlers
+	 * Including resource, tool, and prompt template handlers
 	 */
 	private setupHandlers(): void {
 		// Resource handlers
@@ -96,10 +104,25 @@ export class AnkiMcpServer {
 				request.params.arguments,
 			);
 		});
+
+		// Prompt template handlers
+		this.server.setRequestHandler(ListPromptsRequestSchema, async () => {
+			await this.checkConnection();
+			return this.promptHandler.listPrompts();
+		});
+
+		this.server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+			await this.checkConnection();
+			return this.promptHandler.getPrompt(
+				request.params.name,
+				request.params.arguments,
+			);
+		});
 	}
 
 	/**
-	 * Check if Anki is available
+	 * Check Anki connection status
+	 * Ensure Anki is available and AnkiConnect plugin is enabled
 	 */
 	private async checkConnection(): Promise<void> {
 		try {
@@ -113,7 +136,8 @@ export class AnkiMcpServer {
 	}
 
 	/**
-	 * Run the server
+	 * Start the server
+	 * Using standard input/output transport protocol
 	 */
 	async run() {
 		const transport = new StdioServerTransport();
