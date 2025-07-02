@@ -3,6 +3,7 @@
  */
 import { YankiConnect } from "yanki-connect";
 import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
+import { globalCache, globalPerformanceMonitor } from "./cacheManager.js";
 
 /**
  * Custom error types for Anki operations
@@ -40,6 +41,8 @@ export interface AnkiConfig {
 	timeout: number;
 	retryTimeout: number;
 	defaultDeck: string;
+	enableCache: boolean;
+	enablePerformanceMonitoring: boolean;
 }
 
 /**
@@ -51,6 +54,8 @@ export const DEFAULT_CONFIG: AnkiConfig = {
 	timeout: 5000,
 	retryTimeout: 10000,
 	defaultDeck: "Default",
+	enableCache: true,
+	enablePerformanceMonitoring: true,
 };
 
 /**
@@ -69,41 +74,96 @@ export class AnkiClient {
 	constructor(config: Partial<AnkiConfig> = {}) {
 		this.config = { ...DEFAULT_CONFIG, ...config };
 		this.client = new YankiConnect();
+
+		// Periodic cache cleanup
+		if (this.config.enableCache) {
+			setInterval(
+				() => {
+					globalCache.cleanup();
+				},
+				5 * 60 * 1000,
+			); // Clean up every 5 minutes
+		}
 	}
 
 	/**
-	 * Execute a request with retry logic
+	 * Execute a request with retry logic and performance monitoring
 	 *
 	 * @param operation Function to execute
+	 * @param operationName Name for performance monitoring
 	 * @param maxRetries Maximum number of retries
 	 * @returns Promise with the result
 	 */
 	private async executeWithRetry<T>(
 		operation: () => Promise<T>,
+		operationName: string = "unknown",
 		maxRetries = 1,
 	): Promise<T> {
+		let stopTimer: (() => void) | null = null;
+
+		// Start performance monitoring
+		if (this.config.enablePerformanceMonitoring) {
+			stopTimer = globalPerformanceMonitor.startOperation(operationName);
+		}
+
 		let lastError: Error | null = null;
 
-		for (let attempt = 0; attempt <= maxRetries; attempt++) {
-			try {
-				return await operation();
-			} catch (error) {
-				lastError = this.normalizeError(error);
+		try {
+			for (let attempt = 0; attempt <= maxRetries; attempt++) {
+				try {
+					const result = await operation();
+					return result;
+				} catch (error) {
+					lastError = this.normalizeError(error);
 
-				// Don't wait on the last attempt
-				if (attempt < maxRetries) {
-					// Exponential backoff
-					const delay = Math.min(
-						1000 * Math.pow(2, attempt),
-						this.config.retryTimeout,
-					);
-					await new Promise((resolve) => setTimeout(resolve, delay));
+					// Don't wait on the last attempt
+					if (attempt < maxRetries) {
+						// Exponential backoff
+						const delay = Math.min(
+							1000 * Math.pow(2, attempt),
+							this.config.retryTimeout,
+						);
+						await new Promise((resolve) => setTimeout(resolve, delay));
+					}
 				}
+			}
+
+			// If we get here, all attempts failed
+			throw lastError || new AnkiConnectionError("Unknown error occurred");
+		} finally {
+			// Stop performance monitoring
+			if (stopTimer) {
+				stopTimer();
+			}
+		}
+	}
+
+	/**
+	 * Execute with caching support
+	 */
+	private async executeWithCache<T>(
+		cacheKey: string,
+		operation: () => Promise<T>,
+		operationName: string,
+		ttl: number = 5 * 60 * 1000, // 5-minute default cache
+	): Promise<T> {
+		// Try to get from cache
+		if (this.config.enableCache) {
+			const cached = globalCache.get<T>(cacheKey);
+			if (cached !== null) {
+				return cached;
 			}
 		}
 
-		// If we get here, all attempts failed
-		throw lastError || new AnkiConnectionError("Unknown error occurred");
+		// Execute operation
+		const result = await this.executeWithRetry(operation, operationName);
+
+		// Cache result
+		if (this.config.enableCache) {
+			globalCache.set(cacheKey, result, ttl);
+		}
+
+		return result;
 	}
 
 	/**
@@ -169,9 +229,11 @@ export class AnkiClient {
 	async checkConnection(): Promise<boolean> {
 		try {
 			// Use a direct axios call to check connection since version() is private
-			await this.executeWithRetry(() =>
-				// @ts-ignore - yanki-connect type definitions are incomplete
-				this.client.invoke("version"),
+			await this.executeWithRetry(
+				() =>
+					// @ts-ignore - yanki-connect type definitions are incomplete
+					this.client.invoke("version"),
+				"checkConnection",
 			);
 			return true;
 		} catch (error) {
@@ -182,11 +244,16 @@ export class AnkiClient {
 	}
 
 	/**
-	 * Get all deck names
+	 * Get all deck names (cached)
 	 */
 	async getDeckNames(): Promise<string[]> {
 		try {
-			return await this.executeWithRetry(() => this.client.deck.deckNames());
+			return await this.executeWithCache(
+				"deckNames",
+				() => this.client.deck.deckNames(),
+				"getDeckNames",
+				2 * 60 * 1000, // 2-minute cache
+			);
 		} catch (error) {
 			throw this.wrapError(
 				error instanceof Error ? error : new Error(String(error)),
@@ -195,13 +262,20 @@ export class AnkiClient {
 	}
 
 	/**
-	 * Create a new deck
+	 * Create a new deck (invalidates cache)
 	 */
 	async createDeck(name: string): Promise<number> {
 		try {
-			const result = await this.executeWithRetry(() =>
-				this.client.deck.createDeck({ deck: name }),
+			const result = await this.executeWithRetry(
+				() => this.client.deck.createDeck({ deck: name }),
+				"createDeck",
 			);
+
+			// Clear related cache after creation
+			if (this.config.enableCache) {
+				globalCache.deleteByPrefix("deck");
+			}
+
 			// Convert to number if needed
 			return typeof result === "number" ? result : 0;
 		} catch (error) {
@@ -212,13 +286,20 @@ export class AnkiClient {
 	}
 
 	/**
-	 * Delete a deck
+	 * Delete a deck (invalidates cache)
 	 */
 	async deleteDeck(name: string): Promise<void> {
 		try {
-			await this.executeWithRetry(() =>
-				this.client.deck.deleteDecks({ decks: [name], cardsToo: true }),
+			await this.executeWithRetry(
+				() => this.client.deck.deleteDecks({ decks: [name], cardsToo: true }),
+				"deleteDeck",
 			);
+
+			// Clear related cache after deletion
+			if (this.config.enableCache) {
+				globalCache.deleteByPrefix("deck");
+				globalCache.delete(`deckStats:${name}`);
+			}
 		} catch (error) {
 			throw this.wrapError(
 				error instanceof Error ? error : new Error(String(error)),
@@ -227,12 +308,15 @@ export class AnkiClient {
 	}
 
 	/**
-	 * Get deck stats
+	 * Get deck stats (cached)
 	 */
 	async getDeckStats(name: string): Promise<any> {
 		try {
-			return await this.executeWithRetry(() =>
-				this.client.deck.getDeckStats({ decks: [name] }),
+			return await this.executeWithCache(
+				`deckStats:${name}`,
+				() => this.client.deck.getDeckStats({ decks: [name] }),
+				"getDeckStats",
+				1 * 60 * 1000, // 1-minute cache
 			);
 		} catch (error) {
 			throw this.wrapError(
@@ -242,11 +326,16 @@ export class AnkiClient {
 	}
 
 	/**
-	 * Get all model names
+	 * Get all model names (cached)
 	 */
 	async getModelNames(): Promise<string[]> {
 		try {
-			return await this.executeWithRetry(() => this.client.model.modelNames());
+			return await this.executeWithCache(
+				"modelNames",
+				() => this.client.model.modelNames(),
+				"getModelNames",
+				5 * 60 * 1000, // 5-minute cache
+			);
 		} catch (error) {
 			throw this.wrapError(
 				error instanceof Error ? error : new Error(String(error)),
@@ -255,12 +344,15 @@ export class AnkiClient {
 	}
 
 	/**
-	 * Get field names for a model
+	 * Get model field names (cached)
 	 */
 	async getModelFieldNames(modelName: string): Promise<string[]> {
 		try {
-			return await this.executeWithRetry(() =>
-				this.client.model.modelFieldNames({ modelName }),
+			return await this.executeWithCache(
+				`modelFields:${modelName}`,
+				() => this.client.model.modelFieldNames({ modelName }),
+				"getModelFieldNames",
+				10 * 60 * 1000, // 10-minute cache
 			);
 		} catch (error) {
 			throw this.wrapError(
@@ -270,14 +362,17 @@ export class AnkiClient {
 	}
 
 	/**
-	 * Get templates for a model
+	 * Get model templates (cached)
 	 */
 	async getModelTemplates(
 		modelName: string,
 	): Promise<Record<string, { Front: string; Back: string }>> {
 		try {
-			return await this.executeWithRetry(() =>
-				this.client.model.modelTemplates({ modelName }),
+			return await this.executeWithCache(
+				`modelTemplates:${modelName}`,
+				() => this.client.model.modelTemplates({ modelName }),
+				"getModelTemplates",
+				10 * 60 * 1000, // 10-minute cache
 			);
 		} catch (error) {
 			throw this.wrapError(
@@ -287,12 +382,15 @@ export class AnkiClient {
 	}
 
 	/**
-	 * Get styling for a model
+	 * Get model styling (cached)
 	 */
 	async getModelStyling(modelName: string): Promise<{ css: string }> {
 		try {
-			return await this.executeWithRetry(() =>
-				this.client.model.modelStyling({ modelName }),
+			return await this.executeWithCache(
+				`modelStyling:${modelName}`,
+				() => this.client.model.modelStyling({ modelName }),
+				"getModelStyling",
+				10 * 60 * 1000, // 10-minute cache
 			);
 		} catch (error) {
 			throw this.wrapError(
