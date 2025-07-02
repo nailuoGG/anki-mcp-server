@@ -487,27 +487,6 @@ export class AnkiClient {
 	}
 
 	/**
-	 * Find cards by query
-	 */
-	async findCards(query: string): Promise<number[]> {
-		try {
-			const result = await this.executeWithRetry(() =>
-				this.client.card.findCards({ query }),
-			);
-			// Ensure we return an array of numbers
-			return (
-				Array.isArray(result)
-					? result.filter((id) => typeof id === "number")
-					: []
-			) as number[];
-		} catch (error) {
-			throw this.wrapError(
-				error instanceof Error ? error : new Error(String(error)),
-			);
-		}
-	}
-
-	/**
 	 * Get note info
 	 */
 	async notesInfo(ids: number[]): Promise<

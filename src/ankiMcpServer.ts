@@ -12,6 +12,7 @@ import {
 	McpError,
 	ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+
 import { McpResourceHandler } from "./mcpResource.js";
 import { McpToolHandler } from "./mcpTools.js";
 import { AnkiClient } from "./utils.js";
@@ -44,7 +45,7 @@ export class AnkiMcpServer {
 		);
 
 		this.ankiClient = new AnkiClient();
-		this.resourceHandler = new McpResourceHandler();
+		this.resourceHandler = new McpResourceHandler(this.ankiClient);
 		this.toolHandler = new McpToolHandler();
 
 		this.setupHandlers();

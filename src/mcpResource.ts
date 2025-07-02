@@ -1,288 +1,155 @@
-/**
- * MCP Resource handlers for Anki
- */
 import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import { AnkiClient } from "./utils.js";
 
-/**
- * Handles all MCP resource operations for Anki
- */
 export class McpResourceHandler {
 	private ankiClient: AnkiClient;
-	private modelSchemaCache: Map<string, ModelSchema>;
-	private allModelSchemasCache: ModelSchema[] | null;
-	private cacheExpiry: number;
-	private lastCacheUpdate: number;
 
-	constructor() {
-		this.ankiClient = new AnkiClient();
-		this.modelSchemaCache = new Map();
-		this.allModelSchemasCache = null;
-		this.cacheExpiry = 5 * 60 * 1000; // 5 minutes
-		this.lastCacheUpdate = 0;
+	constructor(ankiClient: AnkiClient) {
+		this.ankiClient = ankiClient;
 	}
 
-	/**
-	 * List all available resources
-	 */
 	async listResources(): Promise<{
 		resources: {
 			uri: string;
 			name: string;
-			description?: string;
-			mimeType?: string;
+			type: string;
+			description: string;
 		}[];
 	}> {
-		await this.ankiClient.checkConnection();
+		const resources = [];
 
-		return {
-			resources: [
-				{
-					uri: "anki://decks/all",
-					name: "All Decks",
-					description: "List of all available decks in Anki",
-					mimeType: "application/json",
-				},
-			],
-		};
+		// List decks as resources
+		const decks = await this.ankiClient.getDeckNames();
+		for (const deckName of decks) {
+			resources.push({
+				uri: `/decks/${encodeURIComponent(deckName)}`,
+				name: deckName,
+				type: "deck",
+				description: `Anki deck: ${deckName}`,
+			});
+		}
+
+		// List note types as resources
+		const noteTypes = await this.ankiClient.getModelNames();
+		for (const noteType of noteTypes) {
+			resources.push({
+				uri: `/noteTypes/${encodeURIComponent(noteType)}`,
+				name: noteType,
+				type: "noteType",
+				description: `Anki note type: ${noteType}`,
+			});
+		}
+
+		// Add other resources as needed (e.g., server config, logs)
+		resources.push({
+			uri: "/server/config",
+			name: "Server Configuration",
+			type: "configuration",
+			description: "Configuration of the Anki MCP Server",
+		});
+
+		return { resources };
 	}
 
-	/**
-	 * List all available resource templates
-	 */
 	async listResourceTemplates(): Promise<{
-		resourceTemplates: {
-			uriTemplate: string;
-			name: string;
-			description?: string;
-			mimeType?: string;
-		}[];
-	}> {
-		await this.ankiClient.checkConnection();
-
-		return {
-			resourceTemplates: [
-				{
-					uriTemplate: "anki://note-types/{modelName}",
-					name: "Note Type Schema",
-					description:
-						"Detailed structure information for a specific note type",
-					mimeType: "application/json",
-				},
-				{
-					uriTemplate: "anki://note-types/all",
-					name: "All Note Types",
-					description: "List of all available note types",
-					mimeType: "application/json",
-				},
-				{
-					uriTemplate: "anki://note-types/all-with-schemas",
-					name: "All Note Types with Schemas",
-					description: "Detailed structure information for all note types",
-					mimeType: "application/json",
-				},
-				{
-					uriTemplate: "anki://decks/all",
-					name: "All Decks",
-					description: "Complete list of available decks",
-					mimeType: "application/json",
-				},
-			],
-		};
-	}
-
-	/**
-	 * Read a resource by URI
-	 */
-	async readResource(uri: string): Promise<{
-		contents: {
+		templates: {
 			uri: string;
-			mimeType?: string;
-			text: string;
+			name: string;
+			type: string;
+			description: string;
+			schema: Record<string, any>;
 		}[];
 	}> {
-		await this.ankiClient.checkConnection();
-		if (uri === "anki://decks/all") {
-			const decks = await this.ankiClient.getDeckNames();
-			return {
-				contents: [
-					{
-						uri,
-						mimeType: "application/json",
-						text: JSON.stringify(
-							{
-								decks,
-								count: decks.length,
-							},
-							null,
-							2,
-						),
-					},
-				],
-			};
-		}
+		const templates = [];
 
-		if (uri === "anki://note-types/all") {
-			const modelNames = await this.ankiClient.getModelNames();
-			return {
-				contents: [
-					{
-						uri,
-						mimeType: "application/json",
-						text: JSON.stringify(
-							{
-								noteTypes: modelNames,
-								count: modelNames.length,
-							},
-							null,
-							2,
-						),
-					},
-				],
-			};
-		}
+		// Template for creating a new deck
+		templates.push({
+			uri: "/templates/deck",
+			name: "New Deck Template",
+			type: "deck",
+			description: "Template for creating a new Anki deck",
+			schema: {
+				type: "object",
+				properties: {
+					name: { type: "string", description: "Name of the new deck" },
+				},
+				required: ["name"],
+			},
+		});
 
-		if (uri === "anki://note-types/all-with-schemas") {
-			const schemas = await this.getAllModelSchemas();
-			return {
-				contents: [
-					{
-						uri,
-						mimeType: "application/json",
-						text: JSON.stringify(
-							{
-								noteTypes: schemas,
-								count: schemas.length,
-							},
-							null,
-							2,
-						),
+		// Template for creating a new note type
+		templates.push({
+			uri: "/templates/noteType",
+			name: "New Note Type Template",
+			type: "noteType",
+			description: "Template for creating a new Anki note type",
+			schema: {
+				type: "object",
+				properties: {
+					name: { type: "string", description: "Name of the new note type" },
+					fields: {
+						type: "array",
+						items: { type: "string" },
+						description: "Field names for the note type",
 					},
-				],
-			};
-		}
-
-		const noteTypeMatch = uri.match(/^anki:\/\/note-types\/(.+)$/);
-		if (noteTypeMatch) {
-			const modelName = decodeURIComponent(noteTypeMatch[1]);
-			try {
-				const schema = await this.getModelSchema(modelName);
-				return {
-					contents: [
-						{
-							uri,
-							mimeType: "application/json",
-							text: JSON.stringify(
-								{
-									modelName: schema.modelName,
-									fields: schema.fields,
-									templates: schema.templates,
-									css: schema.css,
-									createTool: `create_${modelName.replace(/\s+/g, "_")}_note`,
-								},
-								null,
-								2,
-							),
+					css: { type: "string", description: "CSS styling for the note type" },
+					templates: {
+						type: "array",
+						items: {
+							type: "object",
+							properties: {
+								name: { type: "string" },
+								front: { type: "string" },
+								back: { type: "string" },
+							},
+							required: ["name", "front", "back"],
 						},
-					],
-				};
-			} catch (error) {
-				throw new McpError(
-					ErrorCode.InvalidParams,
-					`Note type '${modelName}' does not exist`,
-				);
-			}
-		}
+						description: "Card templates",
+					},
+				},
+				required: ["name", "fields", "templates"],
+			},
+		});
 
-		throw new McpError(ErrorCode.InvalidParams, `Unknown resource: ${uri}`);
+		return { templates };
 	}
 
-	/**
-	 * Get schema for a specific model
-	 */
-	private async getModelSchema(modelName: string): Promise<ModelSchema> {
-		if (!modelName) {
-			throw new McpError(ErrorCode.InvalidParams, "Model name is required");
+	async readResource(uri: string): Promise<{
+		content: { type: string; text: string }[];
+	}> {
+		if (uri.startsWith("/decks/")) {
+			const deckName = decodeURIComponent(uri.substring("/decks/".length));
+			const stats = await this.ankiClient.getDeckStats(deckName);
+			return {
+				content: [{ type: "text", text: JSON.stringify(stats, null, 2) }],
+			};
+		} else if (uri.startsWith("/noteTypes/")) {
+			const modelName = decodeURIComponent(uri.substring("/noteTypes/".length));
+			const [fields, templates, styling] = await Promise.all([
+				this.ankiClient.getModelFieldNames(modelName),
+				this.ankiClient.getModelTemplates(modelName),
+				this.ankiClient.getModelStyling(modelName),
+			]);
+			const info = {
+				modelName,
+				fields,
+				templates,
+				css: styling.css,
+			};
+			return {
+				content: [{ type: "text", text: JSON.stringify(info, null, 2) }],
+			};
+		} else if (uri === "/server/config") {
+			// Return a simplified config for demonstration
+			const config = {
+				ankiConnectUrl: "http://localhost:8765",
+				apiVersion: 6,
+			};
+			return {
+				content: [{ type: "text", text: JSON.stringify(config, null, 2) }],
+			};
 		}
 
-		// Check cache first
-		const now = Date.now();
-		const cached = this.modelSchemaCache.get(modelName);
-		if (cached && now - this.lastCacheUpdate < this.cacheExpiry) {
-			return cached;
-		}
-
-		// Check if model exists
-		const existingModels = await this.ankiClient.getModelNames();
-		if (!existingModels.includes(modelName)) {
-			throw new McpError(
-				ErrorCode.InvalidParams,
-				`Note type not found: ${modelName}`,
-			);
-		}
-
-		// Get model information in parallel
-		const [fields, templates, styling] = await Promise.all([
-			this.ankiClient.getModelFieldNames(modelName),
-			this.ankiClient.getModelTemplates(modelName),
-			this.ankiClient.getModelStyling(modelName),
-		]);
-
-		const modelSchema = {
-			modelName,
-			fields,
-			templates,
-			css: styling.css,
-		};
-
-		// Update cache
-		this.modelSchemaCache.set(modelName, modelSchema);
-		this.lastCacheUpdate = now;
-
-		return modelSchema;
+		throw new McpError(ErrorCode.NotFound, `Resource not found: ${uri}`);
 	}
-
-	/**
-	 * Get schemas for all models
-	 */
-	private async getAllModelSchemas(): Promise<ModelSchema[]> {
-		// Check cache first
-		const now = Date.now();
-		if (
-			this.allModelSchemasCache &&
-			now - this.lastCacheUpdate < this.cacheExpiry
-		) {
-			return this.allModelSchemasCache;
-		}
-
-		const modelNames = await this.ankiClient.getModelNames();
-		const schemas = await Promise.all(
-			modelNames.map((modelName) => this.getModelSchema(modelName)),
-		);
-
-		// Update cache
-		this.allModelSchemasCache = schemas;
-		this.lastCacheUpdate = now;
-
-		return schemas;
-	}
-
-	/**
-	 * Clear all cached data
-	 */
-	clearCache(): void {
-		this.modelSchemaCache.clear();
-		this.allModelSchemasCache = null;
-		this.lastCacheUpdate = 0;
-	}
-}
-
-/**
- * Model schema type
- */
-interface ModelSchema {
-	modelName: string;
-	fields: string[];
-	templates: Record<string, { Front: string; Back: string }>;
-	css: string;
 }
