@@ -129,12 +129,18 @@ Create a cloze card in the "Programming" deck with:
 Text: In JavaScript, {{c1::const}} declares a block-scoped variable that cannot be {{c2::reassigned}}.
 ```
 
+
+
 ## Contributing
 
 1. Fork the repository
 2. Create your feature branch
 3. Run tests: `npm test`
 4. Submit a pull request
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=nailuoGG/anki-mcp-server&type=Date)](https://star-history.com/#nailuoGG/anki-mcp-server&Date)
 
 ## Credits
 
