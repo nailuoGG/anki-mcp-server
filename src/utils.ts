@@ -212,6 +212,36 @@ export class AnkiClient {
 	}
 
 	/**
+	 * Delete a deck
+	 */
+	async deleteDeck(name: string): Promise<void> {
+		try {
+			await this.executeWithRetry(() =>
+				this.client.deck.deleteDecks({ decks: [name], cardsToo: true }),
+			);
+		} catch (error) {
+			throw this.wrapError(
+				error instanceof Error ? error : new Error(String(error)),
+			);
+		}
+	}
+
+	/**
+	 * Get deck stats
+	 */
+	async getDeckStats(name: string): Promise<any> {
+		try {
+			return await this.executeWithRetry(() =>
+				this.client.deck.getDeckStats({ decks: [name] }),
+			);
+		} catch (error) {
+			throw this.wrapError(
+				error instanceof Error ? error : new Error(String(error)),
+			);
+		}
+	}
+
+	/**
 	 * Get all model names
 	 */
 	async getModelNames(): Promise<string[]> {
@@ -360,6 +390,94 @@ export class AnkiClient {
 	}
 
 	/**
+	 * Find cards by query
+	 */
+	async findCards(query: string): Promise<number[]> {
+		try {
+			const result = await this.executeWithRetry(() =>
+				this.client.card.findCards({ query }),
+			);
+			// Ensure we return an array of numbers
+			return (
+				Array.isArray(result)
+					? result.filter((id) => typeof id === "number")
+					: []
+			) as number[];
+		} catch (error) {
+			throw this.wrapError(
+				error instanceof Error ? error : new Error(String(error)),
+			);
+		}
+	}
+
+	/**
+	 * Get card info
+	 */
+	async cardsInfo(ids: number[]): Promise<any[]> {
+		try {
+			const result = await this.executeWithRetry(() =>
+				this.client.card.cardsInfo({ cards: ids }),
+			);
+			return Array.isArray(result) ? result : [];
+		} catch (error) {
+			throw this.wrapError(
+				error instanceof Error ? error : new Error(String(error)),
+			);
+		}
+	}
+
+	/**
+	 * Suspend cards
+	 */
+	async suspendCards(ids: number[]): Promise<void> {
+		try {
+			await this.executeWithRetry(() =>
+				this.client.card.suspend({ cards: ids }),
+			);
+		} catch (error) {
+			throw this.wrapError(
+				error instanceof Error ? error : new Error(String(error)),
+			);
+		}
+	}
+
+	/**
+	 * Unsuspend cards
+	 */
+	async unsuspendCards(ids: number[]): Promise<void> {
+		try {
+			await this.executeWithRetry(() =>
+				this.client.card.unsuspend({ cards: ids }),
+			);
+		} catch (error) {
+			throw this.wrapError(
+				error instanceof Error ? error : new Error(String(error)),
+			);
+		}
+	}
+
+	/**
+	 * Find cards by query
+	 */
+	async findCards(query: string): Promise<number[]> {
+		try {
+			const result = await this.executeWithRetry(() =>
+				this.client.card.findCards({ query }),
+			);
+			// Ensure we return an array of numbers
+			return (
+				Array.isArray(result)
+					? result.filter((id) => typeof id === "number")
+					: []
+			) as number[];
+		} catch (error) {
+			throw this.wrapError(
+				error instanceof Error ? error : new Error(String(error)),
+			);
+		}
+	}
+
+	/**
 	 * Get note info
 	 */
 	async notesInfo(ids: number[]): Promise<
@@ -453,6 +571,41 @@ export class AnkiClient {
 					inOrderFields: params.inOrderFields,
 					css: params.css,
 					cardTemplates: convertedTemplates,
+				}),
+			);
+		} catch (error) {
+			throw this.wrapError(
+				error instanceof Error ? error : new Error(String(error)),
+			);
+		}
+	}
+
+	/**
+	 * Update a model's templates
+	 */
+	async updateModelTemplates(params: {
+		modelName: string;
+		cardTemplates: {
+			name: string;
+			front: string;
+			back: string;
+		}[];
+	}): Promise<void> {
+		try {
+			// Convert to the format expected by yanki-connect
+			const convertedTemplates = params.cardTemplates.map((template) => ({
+				Name: template.name,
+				Front: template.front,
+				Back: template.back,
+			}));
+
+			await this.executeWithRetry(() =>
+				// @ts-ignore
+				this.client.model.updateModelTemplates({
+					model: {
+						name: params.modelName,
+						templates: convertedTemplates,
+					},
 				}),
 			);
 		} catch (error) {

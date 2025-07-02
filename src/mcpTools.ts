@@ -50,6 +50,34 @@ export class McpToolHandler {
 					},
 				},
 				{
+					name: "delete_deck",
+					description: "Delete an Anki deck",
+					inputSchema: {
+						type: "object",
+						properties: {
+							name: {
+								type: "string",
+								description: "Name of the deck to delete",
+							},
+						},
+						required: ["name"],
+					},
+				},
+				{
+					name: "get_deck_stats",
+					description: "Get statistics for a given deck",
+					inputSchema: {
+						type: "object",
+						properties: {
+							name: {
+								type: "string",
+								description: "Name of the deck to get stats for",
+							},
+						},
+						required: ["name"],
+					},
+				},
+				{
 					name: "get_note_type_info",
 					description: "Get detailed structure of a note type",
 					inputSchema: {
@@ -216,6 +244,85 @@ export class McpToolHandler {
 					},
 				},
 				{
+					name: "list_cards",
+					description: "List cards based on a query",
+					inputSchema: {
+						type: "object",
+						properties: {
+							query: {
+								type: "string",
+								description: "Anki search query for cards",
+							},
+						},
+						required: ["query"],
+					},
+				},
+				{
+					name: "get_card_info",
+					description: "Get detailed information about a card",
+					inputSchema: {
+						type: "object",
+						properties: {
+							cardId: {
+								type: "number",
+								description: "ID of the card to get info for",
+							},
+						},
+						required: ["cardId"],
+					},
+				},
+				{
+					name: "suspend_cards",
+					description: "Suspend cards",
+					inputSchema: {
+						type: "object",
+						properties: {
+							cardIds: {
+								type: "array",
+								items: {
+									type: "number",
+								},
+								description: "Array of card IDs to suspend",
+							},
+						},
+						required: ["cardIds"],
+					},
+				},
+				{
+					name: "unsuspend_cards",
+					description: "Unsuspend cards",
+					inputSchema: {
+						type: "object",
+						properties: {
+							cardIds: {
+								type: "array",
+								items: {
+									type: "number",
+								},
+								description: "Array of card IDs to unsuspend",
+							},
+						},
+						required: ["cardIds"],
+					},
+				},
+				{
+					name: "forget_cards",
+					description: "Forget cards, resetting their progress",
+					inputSchema: {
+						type: "object",
+						properties: {
+							cardIds: {
+								type: "array",
+								items: {
+									type: "number",
+								},
+								description: "Array of card IDs to forget",
+							},
+						},
+						required: ["cardIds"],
+					},
+				},
+				{
 					name: "list_note_types",
 					description: "List all available note types",
 					inputSchema: {
@@ -268,6 +375,39 @@ export class McpToolHandler {
 						required: ["name", "fields", "templates"],
 					},
 				},
+				{
+					name: "update_note_type_templates",
+					description: "Update the templates of a note type",
+					inputSchema: {
+						type: "object",
+						properties: {
+							name: {
+								type: "string",
+								description: "Name of the note type to update",
+							},
+							templates: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										name: {
+											type: "string",
+										},
+										front: {
+											type: "string",
+										},
+										back: {
+											type: "string",
+										},
+									},
+									required: ["name", "front", "back"],
+								},
+								description: "New card templates",
+							},
+						},
+						required: ["name", "templates"],
+					},
+				},
 			],
 		};
 	}
@@ -294,12 +434,18 @@ export class McpToolHandler {
 					return this.listDecks();
 				case "create_deck":
 					return this.createDeck(args);
+				case "delete_deck":
+					return this.deleteDeck(args);
+				case "get_deck_stats":
+					return this.getDeckStats(args);
 
 				// Note type tools
 				case "list_note_types":
 					return this.listNoteTypes();
 				case "create_note_type":
 					return this.createNoteType(args);
+				case "update_note_type_templates":
+					return this.updateNoteTypeTemplates(args);
 				case "get_note_type_info":
 					return this.getNoteTypeInfo(args);
 
@@ -316,6 +462,14 @@ export class McpToolHandler {
 					return this.updateNote(args);
 				case "delete_note":
 					return this.deleteNote(args);
+				case "list_cards":
+					return this.listCards(args);
+				case "get_card_info":
+					return this.getCardInfo(args);
+				case "suspend_cards":
+					return this.suspendCards(args);
+				case "unsuspend_cards":
+					return this.unsuspendCards(args);
 
 				// Dynamic model-specific note creation
 				default:
@@ -385,6 +539,54 @@ export class McpToolHandler {
 				{
 					type: "text",
 					text: JSON.stringify({ deckId, name: args.name }, null, 2),
+				},
+			],
+		};
+	}
+
+	/**
+	 * Delete a deck
+	 */
+	private async deleteDeck(args: { name: string }): Promise<{
+		content: {
+			type: string;
+			text: string;
+		}[];
+	}> {
+		if (!args.name) {
+			throw new McpError(ErrorCode.InvalidParams, "Deck name is required");
+		}
+
+		await this.ankiClient.deleteDeck(args.name);
+		return {
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify({ success: true, name: args.name }, null, 2),
+				},
+			],
+		};
+	}
+
+	/**
+	 * Get deck stats
+	 */
+	private async getDeckStats(args: { name: string }): Promise<{
+		content: {
+			type: string;
+			text: string;
+		}[];
+	}> {
+		if (!args.name) {
+			throw new McpError(ErrorCode.InvalidParams, "Deck name is required");
+		}
+
+		const stats = await this.ankiClient.getDeckStats(args.name);
+		return {
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(stats, null, 2),
 				},
 			],
 		};
@@ -466,6 +668,52 @@ export class McpToolHandler {
 							modelName: args.name,
 							fields: args.fields,
 							templates: args.templates.length,
+						},
+						null,
+						2,
+					),
+				},
+			],
+		};
+	}
+
+	/**
+	 * Update a note type's templates
+	 */
+	private async updateNoteTypeTemplates(args: {
+		name: string;
+		templates: {
+			name: string;
+			front: string;
+			back: string;
+		}[];
+	}): Promise<{
+		content: {
+			type: string;
+			text: string;
+		}[];
+	}> {
+		if (!args.name) {
+			throw new McpError(ErrorCode.InvalidParams, "Note type name is required");
+		}
+
+		if (!args.templates || args.templates.length === 0) {
+			throw new McpError(ErrorCode.InvalidParams, "Templates are required");
+		}
+
+		await this.ankiClient.updateModelTemplates({
+			modelName: args.name,
+			cardTemplates: args.templates,
+		});
+
+		return {
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(
+						{
+							success: true,
+							modelName: args.name,
 						},
 						null,
 						2,
@@ -928,6 +1176,129 @@ export class McpToolHandler {
 							success: true,
 							noteId: args.noteId,
 						},
+						null,
+						2,
+					),
+				},
+			],
+		};
+	}
+
+	/**
+	 * List cards
+	 */
+	private async listCards(args: { query: string }): Promise<{
+		content: {
+			type: string;
+			text: string;
+		}[];
+	}> {
+		if (!args.query) {
+			throw new McpError(ErrorCode.InvalidParams, "Search query is required");
+		}
+
+		const cardIds = await this.ankiClient.findCards(args.query);
+
+		return {
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(
+						{
+							query: args.query,
+							total: cardIds.length,
+							cardIds,
+						},
+						null,
+						2,
+					),
+				},
+			],
+		};
+	}
+
+	/**
+	 * Get card info
+	 */
+	private async getCardInfo(args: { cardId: number }): Promise<{
+		content: {
+			type: string;
+			text: string;
+		}[];
+	}> {
+		if (!args.cardId) {
+			throw new McpError(ErrorCode.InvalidParams, "Card ID is required");
+		}
+
+		const cardInfo = await this.ankiClient.cardsInfo([args.cardId]);
+
+		if (!cardInfo || cardInfo.length === 0) {
+			throw new McpError(
+				ErrorCode.InvalidParams,
+				`Card not found: ${args.cardId}`,
+			);
+		}
+
+		return {
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(cardInfo[0], null, 2),
+				},
+			],
+		};
+	}
+
+	/**
+	 * Suspend cards
+	 */
+	private async suspendCards(args: { cardIds: number[] }): Promise<{
+		content: {
+			type: string;
+			text: string;
+		}[];
+	}> {
+		if (!args.cardIds || args.cardIds.length === 0) {
+			throw new McpError(ErrorCode.InvalidParams, "Card IDs are required");
+		}
+
+		await this.ankiClient.suspendCards(args.cardIds);
+
+		return {
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(
+						{ success: true, cardIds: args.cardIds },
+						null,
+						2,
+					),
+				},
+			],
+		};
+	}
+
+	/**
+	 * Unsuspend cards
+	 */
+	private async unsuspendCards(args: { cardIds: number[] }): Promise<{
+		content: {
+			type: string;
+			text: string;
+		}[];
+	}> {
+		if (!args.cardIds || args.cardIds.length === 0) {
+			throw new McpError(ErrorCode.InvalidParams, "Card IDs are required");
+		}
+
+		await this.ankiClient.unsuspendCards(args.cardIds);
+
+		return {
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(
+						{ success: true, cardIds: args.cardIds },
 						null,
 						2,
 					),
