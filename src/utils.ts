@@ -457,6 +457,36 @@ export class AnkiClient {
 	}
 
 	/**
+	 * Forget cards
+	 */
+	async forgetCards(ids: number[]): Promise<void> {
+		try {
+			await this.executeWithRetry(() =>
+				this.client.card.forgetCards({ cards: ids }),
+			);
+		} catch (error) {
+			throw this.wrapError(
+				error instanceof Error ? error : new Error(String(error)),
+			);
+		}
+	}
+
+	/**
+	 * Relearn cards
+	 */
+	async relearnCards(ids: number[]): Promise<void> {
+		try {
+			await this.executeWithRetry(() =>
+				this.client.card.relearnCards({ cards: ids }),
+			);
+		} catch (error) {
+			throw this.wrapError(
+				error instanceof Error ? error : new Error(String(error)),
+			);
+		}
+	}
+
+	/**
 	 * Find cards by query
 	 */
 	async findCards(query: string): Promise<number[]> {

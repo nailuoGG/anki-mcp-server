@@ -323,6 +323,23 @@ export class McpToolHandler {
 					},
 				},
 				{
+					name: "relearn_cards",
+					description: "Relearn cards, moving them to the relearn queue",
+					inputSchema: {
+						type: "object",
+						properties: {
+							cardIds: {
+								type: "array",
+								items: {
+									type: "number",
+								},
+								description: "Array of card IDs to relearn",
+							},
+						},
+						required: ["cardIds"],
+					},
+				},
+				{
 					name: "list_note_types",
 					description: "List all available note types",
 					inputSchema: {
@@ -470,6 +487,10 @@ export class McpToolHandler {
 					return this.suspendCards(args);
 				case "unsuspend_cards":
 					return this.unsuspendCards(args);
+				case "forget_cards":
+					return this.forgetCards(args);
+				case "relearn_cards":
+					return this.relearnCards(args);
 
 				// Dynamic model-specific note creation
 				default:
@@ -1292,6 +1313,64 @@ export class McpToolHandler {
 		}
 
 		await this.ankiClient.unsuspendCards(args.cardIds);
+
+		return {
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(
+						{ success: true, cardIds: args.cardIds },
+						null,
+						2,
+					),
+				},
+			],
+		};
+	}
+
+	/**
+	 * Forget cards
+	 */
+	private async forgetCards(args: { cardIds: number[] }): Promise<{
+		content: {
+			type: string;
+			text: string;
+		}[];
+	}> {
+		if (!args.cardIds || args.cardIds.length === 0) {
+			throw new McpError(ErrorCode.InvalidParams, "Card IDs are required");
+		}
+
+		await this.ankiClient.forgetCards(args.cardIds);
+
+		return {
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(
+						{ success: true, cardIds: args.cardIds },
+						null,
+						2,
+					),
+				},
+			],
+		};
+	}
+
+	/**
+	 * Relearn cards
+	 */
+	private async relearnCards(args: { cardIds: number[] }): Promise<{
+		content: {
+			type: string;
+			text: string;
+		}[];
+	}> {
+		if (!args.cardIds || args.cardIds.length === 0) {
+			throw new McpError(ErrorCode.InvalidParams, "Card IDs are required");
+		}
+
+		await this.ankiClient.relearnCards(args.cardIds);
 
 		return {
 			content: [
