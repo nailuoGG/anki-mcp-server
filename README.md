@@ -14,7 +14,7 @@ A Model Context Protocol (MCP) server that enables LLMs to interact with Anki fl
 - `search_notes` - Search for notes using Anki query syntax
 - `get_note_info` - Get detailed information about a note
 - `update_note` - Update an existing note
-- `delete_note` - Delete a note
+- `delete_note` - Delete one or multiple notes
 - `list_note_types` - List all available note types
 - `create_note_type` - Create a new note type
 - `get_note_type_info` - Get detailed structure of a note type
@@ -127,6 +127,16 @@ Back: A closure is the combination of a function and the lexical environment wit
 ```
 Create a cloze card in the "Programming" deck with:
 Text: In JavaScript, {{c1::const}} declares a block-scoped variable that cannot be {{c2::reassigned}}.
+```
+
+4. Delete a single note:
+```
+Delete note ID 1234567890
+```
+
+5. Delete multiple notes at once:
+```
+Delete note IDs 1234567890, 9876543210, and 1122334455
 ```
 
 
