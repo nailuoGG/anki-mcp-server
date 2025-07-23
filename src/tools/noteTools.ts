@@ -452,10 +452,14 @@ export class CreateModelSpecificNoteTool extends BaseTool implements IMcpTool {
 	name: string;
 	description: string;
 	inputSchema: Record<string, any>;
+	private originalModelName: string;
 
 	constructor(ankiClient: AnkiClient, modelName: string) {
 		super(ankiClient);
-		this.name = `create_${modelName.toLowerCase().replace(/ /g, "_")}_note`;
+		this.originalModelName = modelName;
+		this.name = `create_${modelName
+			.toLowerCase()
+			.replace(/[^a-zA-Z0-9_-]/g, "_")}_note`;
 		this.description = `Create a new note of type ${modelName}`;
 		this.inputSchema = {
 			type: "object",
@@ -475,10 +479,7 @@ export class CreateModelSpecificNoteTool extends BaseTool implements IMcpTool {
 		args: Record<string, any>,
 	): Promise<{ content: { type: string; text: string }[] }> {
 		try {
-			const modelName = this.name
-				.replace(/^create_/, "")
-				.replace(/_note$/, "")
-				.replace(/_/g, " ");
+			const modelName = this.originalModelName;
 
 			if (!args.deck) {
 				throw new McpError(ErrorCode.InvalidParams, "Deck name is required");

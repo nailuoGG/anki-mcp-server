@@ -147,8 +147,21 @@ export class McpToolHandler {
 			if (!tool) {
 				const typeToolMatch = name.match(/^create_(.+)_note$/);
 				if (typeToolMatch) {
-					const modelName = typeToolMatch[1].replace(/_/g, " ");
-					tool = new CreateModelSpecificNoteTool(this.ankiClient, modelName);
+					// Get the lowercase version from the tool name
+					const lowercaseModelName = typeToolMatch[1].replace(/_/g, " ");
+
+					// Find the actual model name with correct casing
+					const modelNames = await this.ankiClient.getModelNames();
+					const actualModelName = modelNames.find(
+						(m) => m.toLowerCase() === lowercaseModelName,
+					);
+
+					if (actualModelName) {
+						tool = new CreateModelSpecificNoteTool(
+							this.ankiClient,
+							actualModelName,
+						);
+					}
 				}
 			}
 
