@@ -40,6 +40,7 @@ export interface AnkiConfig {
 	timeout: number;
 	retryTimeout: number;
 	defaultDeck: string;
+	exampleTags: string[]; // 新增：用于标识示例卡片的标签
 }
 
 /**
@@ -51,6 +52,7 @@ export const DEFAULT_CONFIG: AnkiConfig = {
 	timeout: 5000,
 	retryTimeout: 10000,
 	defaultDeck: "Default",
+	exampleTags: ["example-card", "template-example", "示例卡片"], // 默认的示例卡片标签
 };
 
 /**
@@ -268,6 +270,188 @@ export class AnkiClient {
 			throw this.wrapError(
 				error instanceof Error ? error : new Error(String(error)),
 			);
+		}
+	}
+
+	/**
+	 * Get examples for a model by finding example cards
+	 */
+	async getModelExamples(modelName: string): Promise<{
+		modelName: string;
+		fields: string[];
+		examples: Array<{
+			description: string;
+			fields: Record<string, string>;
+		}>;
+	}> {
+		try {
+			// Get model fields
+			const fields = await this.getModelFieldNames(modelName);
+
+			// Find example cards for this model
+			const examples = await this.findExampleCards(modelName);
+
+			return {
+				modelName,
+				fields,
+				examples,
+			};
+		} catch (error) {
+			throw this.wrapError(
+				error instanceof Error ? error : new Error(String(error)),
+			);
+		}
+	}
+
+	/**
+	 * Find example cards for a specific note type
+	 */
+	private async findExampleCards(modelName: string): Promise<
+		Array<{
+			description: string;
+			fields: Record<string, string>;
+		}>
+	> {
+		// 构建搜索查询
+		const tagQuery = this.config.exampleTags
+			.map((tag) => `tag:${tag}`)
+			.join(" OR ");
+		const query = `"note:${modelName}" (${tagQuery})`;
+
+		// 搜索示例卡片
+		const noteIds = await this.findNotes(query);
+		if (noteIds.length === 0) {
+			return [];
+		}
+
+		// 获取卡片详细信息
+		const notesInfo = await this.notesInfo(noteIds);
+
+		// 转换为示例格式
+		return notesInfo.map((note) => {
+			// 提取描述（可以从特定字段或标签中获取）
+			const description =
+				this.extractExampleDescription(note) || `Example for ${modelName}`;
+
+			// 转换字段格式
+			const fields: Record<string, string> = {};
+			for (const [fieldName, fieldData] of Object.entries(note.fields)) {
+				fields[fieldName] = fieldData.value;
+			}
+
+			return {
+				description,
+				fields,
+				noteId: note.noteId,
+			};
+		});
+	}
+
+	/**
+	 * Extract example description from note
+	 */
+	private extractExampleDescription(note: {
+		noteId: number;
+		modelName: string;
+		tags: string[];
+		fields: Record<string, { value: string; order: number }>;
+	}): string {
+		// 1. 尝试从特定标签中获取描述
+		const descriptionTag = note.tags.find((tag) =>
+			tag.startsWith("description:"),
+		);
+		if (descriptionTag) {
+			return descriptionTag.substring("description:".length).replace(/_/g, " ");
+		}
+
+		// 2. 尝试从特定字段中获取描述
+		const descriptionFields = [
+			"Description",
+			"Note",
+			"Comment",
+			"描述",
+			"说明",
+			"注释",
+		];
+		for (const field of descriptionFields) {
+			if (note.fields[field]?.value) {
+				return note.fields[field].value;
+			}
+		}
+
+		// 3. 使用第一个非空字段的前N个字符作为描述
+		for (const [fieldName, fieldData] of Object.entries(note.fields)) {
+			if (fieldData.value.trim()) {
+				const preview = fieldData.value.trim().slice(0, 50);
+				return `${fieldName}: ${preview}${preview.length >= 50 ? "..." : ""}`;
+			}
+		}
+
+		// 4. 默认描述
+		return `Example card #${note.noteId}`;
+	}
+
+	/**
+	 * Create a new example card
+	 */
+	async createExampleCard(params: {
+		modelName: string;
+		fields: Record<string, string>;
+		description?: string;
+		deckName?: string;
+	}): Promise<number | null> {
+		const deckName = params.deckName || this.config.defaultDeck;
+		const tags = [...this.config.exampleTags];
+
+		// 如果提供了描述，添加为特殊标签
+		if (params.description) {
+			tags.push(`description:${params.description.replace(/\s+/g, "_")}`);
+		}
+
+		// 创建示例卡片
+		const noteId = await this.addNote({
+			deckName,
+			modelName: params.modelName,
+			fields: params.fields,
+			tags,
+		});
+
+		return noteId;
+	}
+
+	/**
+	 * Update an existing example card
+	 */
+	async updateExampleCard(params: {
+		noteId: number;
+		fields: Record<string, string>;
+		description?: string;
+	}): Promise<void> {
+		// 更新字段
+		await this.updateNoteFields({
+			id: params.noteId,
+			fields: params.fields,
+		});
+
+		// 如果提供了新的描述，更新标签
+		if (params.description) {
+			const noteInfo = await this.notesInfo([params.noteId]);
+			if (noteInfo.length > 0) {
+				const note = noteInfo[0];
+				const newTags = note.tags.filter(
+					(tag) => !tag.startsWith("description:"),
+				);
+				newTags.push(`description:${params.description.replace(/\s+/g, "_")}`);
+
+				// 更新标签 - 使用 notesInfo 的格式
+				await this.executeWithRetry(() =>
+					// @ts-ignore - yanki-connect 类型定义中可能没有这个方法
+					this.client.note.updateNoteTags({
+						note: params.noteId,
+						tags: newTags,
+					}),
+				);
+			}
 		}
 	}
 

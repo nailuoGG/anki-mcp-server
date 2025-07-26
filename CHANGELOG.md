@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - GitHub Actions workflow for automated npm publishing
 - GitHub Actions workflow for testing on pull requests
 - Release test workflow to ensure quality before publishing
@@ -18,9 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Robust version validation supporting multiple tag formats
 - npm package configuration
 - Installation instructions for npm package
+- Example cards system for note types
+  - `get_note_type_examples` tool - Get examples for a note type from example cards
+  - `create_example_card` tool - Create a new example card for a note type
+  - `update_example_card` tool - Update an existing example card
+  - `find_example_cards` tool - Find example cards for a specific note type
+- Support for special tags to identify example cards (`example-card`, `template-example`, `示例卡片`)
+- Automatic example card discovery and description extraction
+- Enhanced example management with rich descriptions and flexible marking
 
 ## [0.1.0] - 2025-03-20
-
 
 ### Added
 
@@ -36,10 +44,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add  `get_note_type_info` - Get detailed structure of a note type
-- Add Resources `anki://decks/all`, `anki://note-types/{modelName}` etc 
+- Add `get_note_type_info` - Get detailed structure of a note type
+- Add Resources `anki://decks/all`, `anki://note-types/{modelName}` etc
 - Support for detect card type fields before create card
 
 ### Changed
 
-- Build base on  `yanki-connect` now 
+- Build base on `yanki-connect` now

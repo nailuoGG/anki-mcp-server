@@ -7,6 +7,7 @@ A Model Context Protocol (MCP) server that enables LLMs to interact with Anki fl
 ## Features
 
 ### Tools
+
 - `list_decks` - List all available Anki decks
 - `create_deck` - Create a new Anki deck
 - `create_note` - Create a new note (Basic or Cloze)
@@ -18,8 +19,13 @@ A Model Context Protocol (MCP) server that enables LLMs to interact with Anki fl
 - `list_note_types` - List all available note types
 - `create_note_type` - Create a new note type
 - `get_note_type_info` - Get detailed structure of a note type
+- `get_note_type_examples` - Get examples for a note type from example cards
+- `create_example_card` - Create a new example card for a note type
+- `update_example_card` - Update an existing example card
+- `find_example_cards` - Find example cards for a specific note type
 
 ### Resources
+
 - `anki://decks/all` - Complete list of available decks
 - `anki://note-types/all` - List of all available note types
 - `anki://note-types/all-with-schemas` - Detailed structure information for all note types
@@ -41,7 +47,7 @@ Add the server to your claude_desktop_config.json:
   "mcpServers": {
     "anki": {
       "command": "npx",
-      "args": ["--yes","anki-mcp-server"]
+      "args": ["--yes", "anki-mcp-server"]
     }
   }
 }
@@ -49,14 +55,14 @@ Add the server to your claude_desktop_config.json:
 
 ### Configuration for Cline
 
-Add the server to your Cline MCP settings file inside VSCode's settings `cline_mcp_settings.json` 
+Add the server to your Cline MCP settings file inside VSCode's settings `cline_mcp_settings.json`
 
 ```json
 {
   "mcpServers": {
     "anki": {
       "command": "npx",
-      "args": ["--yes","anki-mcp-server"]
+      "args": ["--yes", "anki-mcp-server"]
     }
   }
 }
@@ -67,16 +73,19 @@ Add the server to your Cline MCP settings file inside VSCode's settings `cline_m
 ### Setup
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
 
 2. Build the server:
+
 ```bash
 npm run build
 ```
 
 3. For development with auto-rebuild:
+
 ```bash
 npm run watch
 ```
@@ -84,11 +93,13 @@ npm run watch
 ### Testing
 
 Run the test suite:
+
 ```bash
 npm test
 ```
 
 This executes tests for:
+
 - Server initialization
 - AnkiConnect communication
 - Note operations (create/read/update/delete)
@@ -104,6 +115,7 @@ npm run inspector
 ```
 
 This provides a browser-based interface for:
+
 - Monitoring MCP messages
 - Testing tool invocations
 - Viewing server logs
@@ -112,11 +124,13 @@ This provides a browser-based interface for:
 ## Example Usage
 
 1. Create a new deck:
+
 ```
 Create a new Anki deck called "Programming"
 ```
 
 2. Add a basic card:
+
 ```
 Create an Anki card in the "Programming" deck with:
 Front: What is a closure in JavaScript?
@@ -124,12 +138,11 @@ Back: A closure is the combination of a function and the lexical environment wit
 ```
 
 3. Add a cloze deletion card:
+
 ```
 Create a cloze card in the "Programming" deck with:
 Text: In JavaScript, {{c1::const}} declares a block-scoped variable that cannot be {{c2::reassigned}}.
 ```
-
-
 
 ## Contributing
 

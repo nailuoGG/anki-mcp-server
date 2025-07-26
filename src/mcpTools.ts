@@ -68,6 +68,85 @@ export class McpToolHandler {
 					},
 				},
 				{
+					name: "get_note_type_examples",
+					description: "Get examples for a note type with sample field values",
+					inputSchema: {
+						type: "object",
+						properties: {
+							modelName: {
+								type: "string",
+								description: "Name of the note type/model",
+							},
+						},
+						required: ["modelName"],
+					},
+				},
+				{
+					name: "create_example_card",
+					description: "Create a new example card for a note type",
+					inputSchema: {
+						type: "object",
+						properties: {
+							modelName: {
+								type: "string",
+								description: "Name of the note type/model",
+							},
+							fields: {
+								type: "object",
+								description: "Field values for the example card",
+								additionalProperties: true,
+							},
+							description: {
+								type: "string",
+								description: "Description of the example (optional)",
+							},
+							deckName: {
+								type: "string",
+								description:
+									"Deck name where to create the example card (optional)",
+							},
+						},
+						required: ["modelName", "fields"],
+					},
+				},
+				{
+					name: "update_example_card",
+					description: "Update an existing example card",
+					inputSchema: {
+						type: "object",
+						properties: {
+							noteId: {
+								type: "number",
+								description: "ID of the note to update",
+							},
+							fields: {
+								type: "object",
+								description: "New field values for the example card",
+								additionalProperties: true,
+							},
+							description: {
+								type: "string",
+								description: "New description for the example (optional)",
+							},
+						},
+						required: ["noteId", "fields"],
+					},
+				},
+				{
+					name: "find_example_cards",
+					description: "Find example cards for a specific note type",
+					inputSchema: {
+						type: "object",
+						properties: {
+							modelName: {
+								type: "string",
+								description: "Name of the note type/model",
+							},
+						},
+						required: ["modelName"],
+					},
+				},
+				{
 					name: "create_note",
 					description:
 						"Create a new note (LLM Should call get_note_type_info first)",
@@ -302,6 +381,14 @@ export class McpToolHandler {
 					return this.createNoteType(args);
 				case "get_note_type_info":
 					return this.getNoteTypeInfo(args);
+				case "get_note_type_examples":
+					return this.getNoteTypeExamples(args);
+				case "create_example_card":
+					return this.createExampleCard(args);
+				case "update_example_card":
+					return this.updateExampleCard(args);
+				case "find_example_cards":
+					return this.findExampleCards(args);
 
 				// Note tools
 				case "create_note":
@@ -522,6 +609,204 @@ export class McpToolHandler {
 				{
 					type: "text",
 					text: JSON.stringify(result, null, 2),
+				},
+			],
+		};
+	}
+
+	/**
+	 * Get examples for a note type
+	 */
+	private async getNoteTypeExamples(args: { modelName: string }): Promise<{
+		content: {
+			type: string;
+			text: string;
+		}[];
+	}> {
+		if (!args.modelName) {
+			throw new McpError(ErrorCode.InvalidParams, "Model name is required");
+		}
+
+		// Check if model exists
+		const existingModels = await this.ankiClient.getModelNames();
+		if (!existingModels.includes(args.modelName)) {
+			throw new McpError(
+				ErrorCode.InvalidParams,
+				`Note type not found: ${args.modelName}`,
+			);
+		}
+
+		const examples = await this.ankiClient.getModelExamples(args.modelName);
+
+		return {
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(examples, null, 2),
+				},
+			],
+		};
+	}
+
+	/**
+	 * Create a new example card for a note type
+	 */
+	private async createExampleCard(args: {
+		modelName: string;
+		fields: Record<string, string>;
+		description?: string;
+		deckName?: string;
+	}): Promise<{
+		content: {
+			type: string;
+			text: string;
+		}[];
+	}> {
+		if (!args.modelName) {
+			throw new McpError(ErrorCode.InvalidParams, "Model name is required");
+		}
+
+		if (!args.fields || Object.keys(args.fields).length === 0) {
+			throw new McpError(ErrorCode.InvalidParams, "Fields are required");
+		}
+
+		// Check if model exists
+		const models = await this.ankiClient.getModelNames();
+		if (!models.includes(args.modelName)) {
+			throw new McpError(
+				ErrorCode.InvalidParams,
+				`Note type not found: ${args.modelName}`,
+			);
+		}
+
+		// Check if deck exists, create if not
+		const decks = await this.ankiClient.getDeckNames();
+		const deckToUse = args.deckName || "Default";
+		if (!decks.includes(deckToUse)) {
+			await this.ankiClient.createDeck(deckToUse);
+		}
+
+		// Normalize field names to match the model
+		const modelFields = await this.ankiClient.getModelFieldNames(
+			args.modelName,
+		);
+		const normalizedFields: Record<string, string> = {};
+		for (const field of modelFields) {
+			normalizedFields[field] =
+				args.fields[field] || args.fields[field.toLowerCase()] || "";
+		}
+
+		// Create the example card using the createExampleCard method
+		const noteId = await this.ankiClient.createExampleCard({
+			modelName: args.modelName,
+			fields: normalizedFields,
+			description: args.description,
+			deckName: deckToUse,
+		});
+
+		return {
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(
+						{
+							success: true,
+							noteId: noteId,
+							modelName: args.modelName,
+							deckName: deckToUse,
+						},
+						null,
+						2,
+					),
+				},
+			],
+		};
+	}
+
+	/**
+	 * Update an existing example card
+	 */
+	private async updateExampleCard(args: {
+		noteId: number;
+		fields: Record<string, string>;
+		description?: string;
+	}): Promise<{
+		content: {
+			type: string;
+			text: string;
+		}[];
+	}> {
+		if (!args.noteId) {
+			throw new McpError(ErrorCode.InvalidParams, "Note ID is required");
+		}
+
+		if (!args.fields || Object.keys(args.fields).length === 0) {
+			throw new McpError(ErrorCode.InvalidParams, "Fields are required");
+		}
+
+		// Check if note exists
+		const notesInfo = await this.ankiClient.notesInfo([args.noteId]);
+
+		if (!notesInfo || notesInfo.length === 0) {
+			throw new McpError(
+				ErrorCode.InvalidParams,
+				`Note not found: ${args.noteId}`,
+			);
+		}
+
+		// Update the example card using the updateExampleCard method
+		await this.ankiClient.updateExampleCard({
+			noteId: args.noteId,
+			fields: args.fields,
+			description: args.description,
+		});
+
+		return {
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(
+						{
+							success: true,
+							noteId: args.noteId,
+						},
+						null,
+						2,
+					),
+				},
+			],
+		};
+	}
+
+	/**
+	 * Find example cards for a specific note type
+	 */
+	private async findExampleCards(args: { modelName: string }): Promise<{
+		content: {
+			type: string;
+			text: string;
+		}[];
+	}> {
+		if (!args.modelName) {
+			throw new McpError(ErrorCode.InvalidParams, "Model name is required");
+		}
+
+		// Check if model exists
+		const models = await this.ankiClient.getModelNames();
+		if (!models.includes(args.modelName)) {
+			throw new McpError(
+				ErrorCode.InvalidParams,
+				`Note type not found: ${args.modelName}`,
+			);
+		}
+
+		const exampleCards = await this.ankiClient.getModelExamples(args.modelName);
+
+		return {
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(exampleCards, null, 2),
 				},
 			],
 		};
