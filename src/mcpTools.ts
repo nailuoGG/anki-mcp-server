@@ -203,16 +203,24 @@ export class McpToolHandler {
 				},
 				{
 					name: "delete_note",
-					description: "Delete a note",
+					description: "Delete one or multiple notes",
 					inputSchema: {
 						type: "object",
 						properties: {
 							noteId: {
 								type: "number",
-								description: "Note ID to delete",
+								description: "Single note ID to delete",
+							},
+							noteIds: {
+								type: "array",
+								items: {
+									type: "number",
+								},
+								description: "Multiple note IDs to delete",
 							},
 						},
-						required: ["noteId"],
+						required: [],
+						additionalProperties: false,
 					},
 				},
 				{
@@ -905,19 +913,49 @@ export class McpToolHandler {
 	}
 
 	/**
-	 * Delete a note
+	 * Delete one or multiple notes
 	 */
-	private async deleteNote(args: { noteId: number }): Promise<{
+	private async deleteNote(args: {
+		noteId?: number;
+		noteIds?: number[];
+	}): Promise<{
 		content: {
 			type: string;
 			text: string;
 		}[];
 	}> {
-		if (!args.noteId) {
-			throw new McpError(ErrorCode.InvalidParams, "Note ID is required");
+		// Validation: exactly one parameter must be provided
+		const hasNoteId = args.noteId !== undefined;
+		const hasNoteIds = args.noteIds !== undefined && args.noteIds.length > 0;
+
+		if (!hasNoteId && !hasNoteIds) {
+			throw new McpError(
+				ErrorCode.InvalidParams,
+				"Either noteId or noteIds must be provided",
+			);
 		}
 
-		await this.ankiClient.deleteNotes([args.noteId]);
+		if (hasNoteId && hasNoteIds) {
+			throw new McpError(
+				ErrorCode.InvalidParams,
+				"Provide either noteId OR noteIds, not both",
+			);
+		}
+
+		// Determine which IDs to delete
+		const idsToDelete = hasNoteId
+			? [args.noteId as number]
+			: (args.noteIds as number[]);
+
+		// Validate all IDs are valid numbers
+		if (idsToDelete.some((id) => !Number.isInteger(id) || id <= 0)) {
+			throw new McpError(
+				ErrorCode.InvalidParams,
+				"All note IDs must be positive integers",
+			);
+		}
+
+		await this.ankiClient.deleteNotes(idsToDelete);
 
 		return {
 			content: [
@@ -926,7 +964,8 @@ export class McpToolHandler {
 					text: JSON.stringify(
 						{
 							success: true,
-							noteId: args.noteId,
+							deletedCount: idsToDelete.length,
+							noteIds: idsToDelete,
 						},
 						null,
 						2,
