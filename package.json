@@ -17,7 +17,7 @@
     "format": "biome format . --write",
     "lint": "biome lint .",
     "check": "biome check --apply .",
-    "inspector": "npx @modelcontextprotocol/inspector build/index.js",
+    "inspector": "npx @modelcontextprotocol/inspector dist/index.js",
     "test": "jest --runInBand --detectOpenHandles",
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
