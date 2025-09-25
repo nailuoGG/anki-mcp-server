@@ -43,11 +43,23 @@ Once the PR is merged:
 5. Add release notes (can be copied from CHANGELOG.md)
 6. Click "Create release" (not "Publish release")
 
-### 5. Monitor the Release Test Workflow
+### 5. Attach Desktop Extension (.mcpb)
+
+Optionally package and attach a Desktop Extension for Claude Desktop users:
+
+```bash
+npm install -g @anthropic-ai/mcpb
+mcpb pack
+```
+
+This validates `manifest.json` and produces a `.mcpb` archive. Upload it as a release asset so users can install with a drag-and-drop in Claude Desktop. See: [Desktop Extensions: One-click MCP server installation for Claude Desktop](https://www.anthropic.com/engineering/desktop-extensions).
+
+### 6. Monitor the Release Test Workflow
 
 The GitHub Actions workflow will automatically:
 
 1. Run the "Release Test" workflow first:
+
    - Build the package
    - Run tests on multiple Node.js versions
    - Validate the version matches the GitHub release tag
@@ -60,7 +72,7 @@ The GitHub Actions workflow will automatically:
 
 You can monitor the progress in the [Actions tab](https://github.com/nailuoGG/anki-mcp-server/actions).
 
-### 6. Verify the Publication
+### 7. Verify the Publication
 
 Check that the package is available on npm:
 
