@@ -14,6 +14,7 @@
     "prebuild": "node -p \"'export const MCP_VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/_version.ts",
     "build": "tsup",
     "watch": "tsup --watch",
+    "mcpb": "npm run build && mcpb pack",
     "format": "biome format . --write",
     "lint": "biome lint .",
     "check": "biome check --apply .",
@@ -35,6 +36,7 @@
     "yanki-connect": "2.2.1"
   },
   "devDependencies": {
+    "@anthropic-ai/mcpb": "1.1.1",
     "@biomejs/biome": "1.5.3",
     "@jest/globals": "29.7.0",
     "@types/jest": "29.5.14",

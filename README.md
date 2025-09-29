@@ -38,15 +38,12 @@ A Model Context Protocol (MCP) server that enables LLMs to interact with Anki fl
 
 This repository supports Anthropic Desktop Extensions (MCPB). The easiest way to use this server in Claude Desktop is by installing the packaged `.mcpb` bundle.
 
-1. Download the latest `.mcpb` from the Releases page (if available), or build it locally (see below).
-2. Open Claude Desktop Settings → Extensions and drag the `.mcpb` file in, then click Install.
-
-To build a `.mcpb` locally:
-
+1. Generate the `.mcpb` file locally using the provided script:
 ```bash
-npm install -g @anthropic-ai/mcpb
-mcpb pack
+npm run pack
 ```
+
+2. Open Claude Desktop Settings → Extensions and drag the generated `.mcpb` file in, then click Install.
 
 This validates `manifest.json` and outputs a `.mcpb` archive you can install as above. Learn more about Desktop Extensions in Anthropic's announcement: [Desktop Extensions: One-click MCP server installation for Claude Desktop](https://www.anthropic.com/engineering/desktop-extensions).
 
@@ -87,11 +84,10 @@ Add the server to your Cline MCP settings file inside VSCode's settings `cline_m
 Create a distributable Desktop Extension bundle for Claude Desktop:
 
 ```bash
-npm install -g @anthropic-ai/mcpb
-mcpb pack
+npm run pack
 ```
 
-This will generate a `.mcpb` archive from the current repository, validating `manifest.json`. Test by dragging it into Claude Desktop's Extensions settings. Reference: [Desktop Extensions: One-click MCP server installation for Claude Desktop](https://www.anthropic.com/engineering/desktop-extensions).
+This will build the project and generate a `.mcpb` archive from the current repository, validating `manifest.json`. Test by dragging it into Claude Desktop's Extensions settings. Reference: [Desktop Extensions: One-click MCP server installation for Claude Desktop](https://www.anthropic.com/engineering/desktop-extensions).
 
 ### Setup
 
