@@ -29,7 +29,7 @@ export class AnkiMcpServer {
 	/**
 	 * Constructor
 	 */
-	constructor() {
+	constructor(port: number = 8765) {
 		this.server = new Server(
 			{
 				name: "anki-connect-server",
@@ -43,7 +43,9 @@ export class AnkiMcpServer {
 			},
 		);
 
-		this.ankiClient = new AnkiClient();
+		this.ankiClient = new AnkiClient({
+			ankiConnectUrl: `http://localhost:${port}`,
+		});
 		this.resourceHandler = new McpResourceHandler();
 		this.toolHandler = new McpToolHandler();
 
