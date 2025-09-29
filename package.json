@@ -33,7 +33,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.18.2",
     "axios": "1.12.1",
-    "yanki-connect": "2.2.3"
+    "yanki-connect": "3.0.5"
   },
   "devDependencies": {
     "@anthropic-ai/mcpb": "1.1.1",
