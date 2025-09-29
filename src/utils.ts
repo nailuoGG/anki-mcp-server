@@ -68,7 +68,13 @@ export class AnkiClient {
 	 */
 	constructor(config: Partial<AnkiConfig> = {}) {
 		this.config = { ...DEFAULT_CONFIG, ...config };
-		this.client = new YankiConnect();
+
+		// Extract host and port from ankiConnectUrl
+		const url = new URL(this.config.ankiConnectUrl);
+		this.client = new YankiConnect({
+			host: `${url.protocol}//${url.hostname}`,
+			port: parseInt(url.port, 10),
+		});
 	}
 
 	/**
