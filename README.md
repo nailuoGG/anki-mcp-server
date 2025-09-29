@@ -31,6 +31,7 @@ A Model Context Protocol (MCP) server that enables LLMs to interact with Anki fl
 
 1. [Anki](https://apps.ankiweb.net/) installed on your system
 2. [AnkiConnect](https://ankiweb.net/shared/info/2055492159) add-on installed in Anki
+3. Node.js 18+ (MCP requires Node.js v18.x or higher to work fine.)
 
 ## Configuration
 
