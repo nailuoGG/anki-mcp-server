@@ -62,6 +62,21 @@ Add the server to your claude_desktop_config.json:
 }
 ```
 
+#### Using Custom AnkiConnect Port
+
+If your AnkiConnect is running on a different port, you can specify it using the `--port` parameter:
+
+```json
+{
+  "mcpServers": {
+    "anki": {
+      "command": "npx",
+      "args": ["--yes", "anki-mcp-server", "--port", "8080"]
+    }
+  }
+}
+```
+
 ### Configuration for Cline
 
 Add the server to your Cline MCP settings file inside VSCode's settings `cline_mcp_settings.json`
@@ -72,6 +87,21 @@ Add the server to your Cline MCP settings file inside VSCode's settings `cline_m
     "anki": {
       "command": "npx",
       "args": ["--yes", "anki-mcp-server"]
+    }
+  }
+}
+```
+
+#### Using Custom AnkiConnect Port
+
+For Cline, you can also specify a custom port:
+
+```json
+{
+  "mcpServers": {
+    "anki": {
+      "command": "npx",
+      "args": ["--yes", "anki-mcp-server", "--port", "8080"]
     }
   }
 }
