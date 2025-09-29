@@ -7,6 +7,7 @@ A Model Context Protocol (MCP) server that enables LLMs to interact with Anki fl
 ## Features
 
 ### Tools
+
 - `list_decks` - List all available Anki decks
 - `create_deck` - Create a new Anki deck
 - `create_note` - Create a new note (Basic or Cloze)
@@ -20,6 +21,7 @@ A Model Context Protocol (MCP) server that enables LLMs to interact with Anki fl
 - `get_note_type_info` - Get detailed structure of a note type
 
 ### Resources
+
 - `anki://decks/all` - Complete list of available decks
 - `anki://note-types/all` - List of all available note types
 - `anki://note-types/all-with-schemas` - Detailed structure information for all note types
@@ -32,6 +34,19 @@ A Model Context Protocol (MCP) server that enables LLMs to interact with Anki fl
 
 ## Configuration
 
+### Install via Desktop Extension (.mcpb)
+
+This repository supports Anthropic Desktop Extensions (MCPB). The easiest way to use this server in Claude Desktop is by installing the packaged `.mcpb` bundle.
+
+1. Generate the `.mcpb` file locally using the provided script:
+```bash
+npm run pack
+```
+
+2. Open Claude Desktop Settings → Extensions and drag the generated `.mcpb` file in, then click Install.
+
+This validates `manifest.json` and outputs a `.mcpb` archive you can install as above. Learn more about Desktop Extensions in Anthropic's announcement: [Desktop Extensions: One-click MCP server installation for Claude Desktop](https://www.anthropic.com/engineering/desktop-extensions).
+
 ### Usage with Claude Desktop
 
 Add the server to your claude_desktop_config.json:
@@ -41,7 +56,7 @@ Add the server to your claude_desktop_config.json:
   "mcpServers": {
     "anki": {
       "command": "npx",
-      "args": ["--yes","anki-mcp-server"]
+      "args": ["--yes", "anki-mcp-server"]
     }
   }
 }
@@ -49,14 +64,14 @@ Add the server to your claude_desktop_config.json:
 
 ### Configuration for Cline
 
-Add the server to your Cline MCP settings file inside VSCode's settings `cline_mcp_settings.json` 
+Add the server to your Cline MCP settings file inside VSCode's settings `cline_mcp_settings.json`
 
 ```json
 {
   "mcpServers": {
     "anki": {
       "command": "npx",
-      "args": ["--yes","anki-mcp-server"]
+      "args": ["--yes", "anki-mcp-server"]
     }
   }
 }
@@ -64,19 +79,32 @@ Add the server to your Cline MCP settings file inside VSCode's settings `cline_m
 
 ## Development
 
+### Packaging a Desktop Extension (.mcpb)
+
+Create a distributable Desktop Extension bundle for Claude Desktop:
+
+```bash
+npm run pack
+```
+
+This will build the project and generate a `.mcpb` archive from the current repository, validating `manifest.json`. Test by dragging it into Claude Desktop's Extensions settings. Reference: [Desktop Extensions: One-click MCP server installation for Claude Desktop](https://www.anthropic.com/engineering/desktop-extensions).
+
 ### Setup
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
 
 2. Build the server:
+
 ```bash
 npm run build
 ```
 
 3. For development with auto-rebuild:
+
 ```bash
 npm run watch
 ```
@@ -84,11 +112,13 @@ npm run watch
 ### Testing
 
 Run the test suite:
+
 ```bash
 npm test
 ```
 
 This executes tests for:
+
 - Server initialization
 - AnkiConnect communication
 - Note operations (create/read/update/delete)
@@ -104,6 +134,7 @@ npm run inspector
 ```
 
 This provides a browser-based interface for:
+
 - Monitoring MCP messages
 - Testing tool invocations
 - Viewing server logs
@@ -112,11 +143,13 @@ This provides a browser-based interface for:
 ## Example Usage
 
 1. Create a new deck:
+
 ```
 Create a new Anki deck called "Programming"
 ```
 
 2. Add a basic card:
+
 ```
 Create an Anki card in the "Programming" deck with:
 Front: What is a closure in JavaScript?
@@ -124,22 +157,24 @@ Back: A closure is the combination of a function and the lexical environment wit
 ```
 
 3. Add a cloze deletion card:
+
 ```
 Create a cloze card in the "Programming" deck with:
 Text: In JavaScript, {{c1::const}} declares a block-scoped variable that cannot be {{c2::reassigned}}.
 ```
 
+
 4. Delete a single note:
+
 ```
 Delete note ID 1234567890
 ```
 
 5. Delete multiple notes at once:
+
 ```
 Delete note IDs 1234567890, 9876543210, and 1122334455
 ```
-
-
 
 ## Contributing
 

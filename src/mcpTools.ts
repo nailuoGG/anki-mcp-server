@@ -70,34 +70,37 @@ export class McpToolHandler {
 				{
 					name: "create_note",
 					description:
-						"Create a new note (LLM Should call get_note_type_info first)",
+						"Create a single note. For multiple notes, use batch_create_notes instead (10-20 notes per batch recommended). Always call get_note_type_info first to understand required fields.",
 					inputSchema: {
 						type: "object",
 						properties: {
 							type: {
 								type: "string",
-								description: "Note type",
+								description:
+									"Note type. Common: 'Basic' (has Front/Back), 'Cloze' (has Text with {{c1::deletions}})",
 							},
 							deck: {
 								type: "string",
-								description: "Deck name",
+								description: "Target deck name",
 							},
 							fields: {
 								type: "object",
 								description:
-									"Custom fields for the note(get note type info first)",
+									"Note fields. Basic type: {Front: 'question', Back: 'answer'}. Cloze type: {Text: 'text with {{c1::deletion}}'}. Call get_note_type_info for custom types.",
 								additionalProperties: true,
 							},
 							allowDuplicate: {
 								type: "boolean",
-								description: "Whether to allow duplicate notes",
+								description:
+									"Whether to allow duplicate notes (default: false)",
+								default: false,
 							},
 							tags: {
 								type: "array",
 								items: {
 									type: "string",
 								},
-								description: "Tags for the note",
+								description: "Optional tags for organization",
 							},
 						},
 						required: ["type", "deck", "fields"],
@@ -106,24 +109,32 @@ export class McpToolHandler {
 				{
 					name: "batch_create_notes",
 					description:
-						"Create multiple notes at once (llm should call get_note_type_info first )",
+						"Create multiple notes at once. IMPORTANT: For optimal performance, limit batch size to 10-20 notes at a time. For larger sets, split into multiple batches. Always call get_note_type_info first to understand the required fields.",
 					inputSchema: {
 						type: "object",
 						properties: {
 							notes: {
 								type: "array",
+								description:
+									"Array of notes to create. RECOMMENDED: 10-20 notes per batch for best performance. Maximum: 50 notes.",
+								maxItems: 50,
 								items: {
 									type: "object",
 									properties: {
 										type: {
 											type: "string",
+											description:
+												"Note type. Common types: 'Basic' (Front/Back fields), 'Cloze' (Text field with {{c1::text}} deletions)",
 											enum: ["Basic", "Cloze"],
 										},
 										deck: {
 											type: "string",
+											description: "Target deck name",
 										},
 										fields: {
 											type: "object",
+											description:
+												"Note fields. For Basic: {Front: '...', Back: '...'}. For Cloze: {Text: '...with {{c1::deletion}}'}",
 											additionalProperties: true,
 										},
 										tags: {
@@ -131,6 +142,7 @@ export class McpToolHandler {
 											items: {
 												type: "string",
 											},
+											description: "Optional tags for organization",
 										},
 									},
 									required: ["type", "deck", "fields"],
@@ -138,14 +150,41 @@ export class McpToolHandler {
 							},
 							allowDuplicate: {
 								type: "boolean",
-								description: "Whether to allow duplicate notes",
+								description:
+									"Whether to allow duplicate notes (default: false)",
+								default: false,
 							},
 							stopOnError: {
 								type: "boolean",
-								description: "Whether to stop on first error",
+								description:
+									"Whether to stop on first error or continue with remaining notes (default: false)",
+								default: false,
 							},
 						},
 						required: ["notes"],
+						examples: [
+							{
+								notes: [
+									{
+										type: "Basic",
+										deck: "Programming",
+										fields: {
+											Front: "What is a closure?",
+											Back: "A function with access to its outer scope",
+										},
+										tags: ["javascript", "concepts"],
+									},
+									{
+										type: "Cloze",
+										deck: "Programming",
+										fields: {
+											Text: "In JavaScript, {{c1::const}} declares a {{c2::block-scoped}} variable",
+										},
+										tags: ["javascript", "syntax"],
+									},
+								],
+							},
+						],
 					},
 				},
 				{

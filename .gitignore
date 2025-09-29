@@ -5,3 +5,5 @@ build/
 .idea/
 test-language.js
 dist/
+*.mcpb
+*.tgz
