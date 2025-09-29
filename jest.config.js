@@ -14,7 +14,7 @@ export default {
 			},
 		],
 	},
-	testMatch: ["**/src/**/*.test.ts"],
+	testMatch: ["**/tests/**/*.test.ts"],
 	testPathIgnorePatterns: ["/node_modules/", "/build/"],
 	clearMocks: true,
 	restoreMocks: true,
