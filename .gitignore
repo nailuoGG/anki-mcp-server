@@ -7,3 +7,6 @@ test-language.js
 dist/
 *.mcpb
 *.tgz
+.mcpregistry_github_token
+.mcpregistry_registry_token
+
