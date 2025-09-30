@@ -1,7 +1,7 @@
 {
     "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
     "name": "io.github.nailuoGG/anki-mcp-server",
-    "description": "A Model Context Protocol (MCP) server that enables LLMs to interact with Anki flashcard software through AnkiConnect",
+    "description": "MCP server enabling LLMs to interact with Anki flashcard software through AnkiConnect",
     "repository": {
         "url": "ssh://git@github.com/nailuoGG/anki-mcp-server",
         "source": "github"
