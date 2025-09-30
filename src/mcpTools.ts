@@ -91,8 +91,7 @@ export class McpToolHandler {
 							},
 							allowDuplicate: {
 								type: "boolean",
-								description:
-									"Whether to allow duplicate notes (default: false)",
+								description: "Whether to allow duplicate notes (default: false)",
 								default: false,
 							},
 							tags: {
@@ -150,8 +149,7 @@ export class McpToolHandler {
 							},
 							allowDuplicate: {
 								type: "boolean",
-								description:
-									"Whether to allow duplicate notes (default: false)",
+								description: "Whether to allow duplicate notes (default: false)",
 								default: false,
 							},
 							stopOnError: {
@@ -316,7 +314,7 @@ export class McpToolHandler {
 	 */
 	async executeTool(
 		name: string,
-		args: Record<string, unknown>,
+		args: Record<string, unknown>
 	): Promise<{
 		content: {
 			type: string;
@@ -376,9 +374,7 @@ export class McpToolHandler {
 				content: [
 					{
 						type: "text",
-						text: `Error: ${
-							error instanceof Error ? error.message : String(error)
-						}`,
+						text: `Error: ${error instanceof Error ? error.message : String(error)}`,
 					},
 				],
 				isError: true,
@@ -483,10 +479,7 @@ export class McpToolHandler {
 		// Check if model already exists
 		const existingModels = await this.ankiClient.getModelNames();
 		if (existingModels.includes(args.name)) {
-			throw new McpError(
-				ErrorCode.InvalidParams,
-				`Note type already exists: ${args.name}`,
-			);
+			throw new McpError(ErrorCode.InvalidParams, `Note type already exists: ${args.name}`);
 		}
 
 		await this.ankiClient.createModel({
@@ -508,7 +501,7 @@ export class McpToolHandler {
 							templates: args.templates.length,
 						},
 						null,
-						2,
+						2
 					),
 				},
 			],
@@ -534,10 +527,7 @@ export class McpToolHandler {
 		// Check if model exists
 		const existingModels = await this.ankiClient.getModelNames();
 		if (!existingModels.includes(args.modelName)) {
-			throw new McpError(
-				ErrorCode.InvalidParams,
-				`Note type not found: ${args.modelName}`,
-			);
+			throw new McpError(ErrorCode.InvalidParams, `Note type not found: ${args.modelName}`);
 		}
 
 		// Get model information in parallel
@@ -608,18 +598,14 @@ export class McpToolHandler {
 		// Check if model exists
 		const models = await this.ankiClient.getModelNames();
 		if (!models.includes(args.type)) {
-			throw new McpError(
-				ErrorCode.InvalidParams,
-				`Note type not found: ${args.type}`,
-			);
+			throw new McpError(ErrorCode.InvalidParams, `Note type not found: ${args.type}`);
 		}
 
 		// Normalize field names to match the model
 		const modelFields = await this.ankiClient.getModelFieldNames(args.type);
 		const normalizedFields: Record<string, string> = {};
 		for (const field of modelFields) {
-			normalizedFields[field] =
-				args.fields[field] || args.fields[field.toLowerCase()] || "";
+			normalizedFields[field] = args.fields[field] || args.fields[field.toLowerCase()] || "";
 		}
 
 		const noteId = await this.ankiClient.addNote({
@@ -643,7 +629,7 @@ export class McpToolHandler {
 							modelName: args.type,
 						},
 						null,
-						2,
+						2
 					),
 				},
 			],
@@ -655,7 +641,7 @@ export class McpToolHandler {
 	 */
 	private async createModelSpecificNote(
 		modelName: string,
-		args: Record<string, unknown>,
+		args: Record<string, unknown>
 	): Promise<{
 		content: {
 			type: string;
@@ -669,10 +655,7 @@ export class McpToolHandler {
 		// Check if model exists
 		const models = await this.ankiClient.getModelNames();
 		if (!models.includes(modelName)) {
-			throw new McpError(
-				ErrorCode.InvalidParams,
-				`Note type not found: ${modelName}`,
-			);
+			throw new McpError(ErrorCode.InvalidParams, `Note type not found: ${modelName}`);
 		}
 
 		// Check if deck exists, create if not
@@ -711,7 +694,7 @@ export class McpToolHandler {
 							modelName,
 						},
 						null,
-						2,
+						2
 					),
 				},
 			],
@@ -771,8 +754,7 @@ export class McpToolHandler {
 				// Normalize field names to match the model, all fields can be empty
 				const normalizedFields: Record<string, string> = {};
 				for (const field of modelFields) {
-					normalizedFields[field] =
-						note.fields[field] || note.fields[field.toLowerCase()] || "";
+					normalizedFields[field] = note.fields[field] || note.fields[field.toLowerCase()] || "";
 				}
 
 				const noteId = await this.ankiClient.addNote({
@@ -815,7 +797,7 @@ export class McpToolHandler {
 							failed: results.filter((r) => !r.success).length,
 						},
 						null,
-						2,
+						2
 					),
 				},
 			],
@@ -846,9 +828,7 @@ export class McpToolHandler {
 		if (noteIds.length > 0) {
 			// Get detailed info for the first 50 notes
 			const limit = Math.min(noteIds.length, 50);
-			const notesInfo = await this.ankiClient.notesInfo(
-				noteIds.slice(0, limit),
-			);
+			const notesInfo = await this.ankiClient.notesInfo(noteIds.slice(0, limit));
 			notes = notesInfo;
 		}
 
@@ -864,7 +844,7 @@ export class McpToolHandler {
 							limitApplied: noteIds.length > 50,
 						},
 						null,
-						2,
+						2
 					),
 				},
 			],
@@ -887,10 +867,7 @@ export class McpToolHandler {
 		const notesInfo = await this.ankiClient.notesInfo([args.noteId]);
 
 		if (!notesInfo || notesInfo.length === 0) {
-			throw new McpError(
-				ErrorCode.InvalidParams,
-				`Note not found: ${args.noteId}`,
-			);
+			throw new McpError(ErrorCode.InvalidParams, `Note not found: ${args.noteId}`);
 		}
 
 		return {
@@ -947,7 +924,7 @@ export class McpToolHandler {
 							noteId: args.id,
 						},
 						null,
-						2,
+						2
 					),
 				},
 			],
@@ -979,7 +956,7 @@ export class McpToolHandler {
 							noteId: args.noteId,
 						},
 						null,
-						2,
+						2
 					),
 				},
 			],

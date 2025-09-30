@@ -45,7 +45,7 @@ export class AnkiMcpServer {
 						listChanged: true, // Resources list may change dynamically
 					},
 				},
-			},
+			}
 		);
 
 		this.ankiClient = new AnkiClient({
@@ -73,21 +73,15 @@ export class AnkiMcpServer {
 			return this.resourceHandler.listResources();
 		});
 
-		this.server.setRequestHandler(
-			ListResourceTemplatesRequestSchema,
-			async () => {
-				await this.checkConnection();
-				return this.resourceHandler.listResourceTemplates();
-			},
-		);
+		this.server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
+			await this.checkConnection();
+			return this.resourceHandler.listResourceTemplates();
+		});
 
-		this.server.setRequestHandler(
-			ReadResourceRequestSchema,
-			async (request) => {
-				await this.checkConnection();
-				return this.resourceHandler.readResource(request.params.uri);
-			},
-		);
+		this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+			await this.checkConnection();
+			return this.resourceHandler.readResource(request.params.uri);
+		});
 
 		// Tool handlers
 		this.server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -97,10 +91,7 @@ export class AnkiMcpServer {
 
 		this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
 			await this.checkConnection();
-			return this.toolHandler.executeTool(
-				request.params.name,
-				request.params.arguments,
-			);
+			return this.toolHandler.executeTool(request.params.name, request.params.arguments);
 		});
 	}
 
@@ -113,7 +104,7 @@ export class AnkiMcpServer {
 		} catch (error) {
 			throw new McpError(
 				ErrorCode.InternalError,
-				"Failed to connect to Anki. Please make sure Anki is running and the AnkiConnect plugin is enabled.",
+				"Failed to connect to Anki. Please make sure Anki is running and the AnkiConnect plugin is enabled."
 			);
 		}
 	}
@@ -155,10 +146,7 @@ export class AnkiMcpServer {
 				params: {},
 			});
 		} catch (error) {
-			console.error(
-				"Failed to send resources list changed notification:",
-				error,
-			);
+			console.error("Failed to send resources list changed notification:", error);
 		}
 	}
 }
