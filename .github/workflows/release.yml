@@ -1,0 +1,175 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  test:
+    name: Pre-release Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint code
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+      - name: Validate MCP schema
+        run: npm run validate-mcp
+
+      - name: Check package validity
+        run: npm pack --dry-run
+
+  publish-npm:
+    name: Publish to NPM
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for npm provenance
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          registry-url: "https://registry.npmjs.org"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to NPM
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Upload npm logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-logs
+          path: |
+            /home/runner/.npm/_logs/*.log
+          retention-days: 7
+
+  publish-mcp:
+    name: Publish to MCP Registry
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Validate server.json schema
+        run: |
+          curl -L --max-time 30 --fail -o server.schema.json https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json
+          node -e "
+            const Ajv = require('ajv');
+            const fs = require('fs');
+            const ajv = new Ajv({allErrors: true, verbose: true});
+            const schema = JSON.parse(fs.readFileSync('server.schema.json', 'utf8'));
+            const data = JSON.parse(fs.readFileSync('server.json', 'utf8'));
+            const validate = ajv.compile(schema);
+            const valid = validate(data);
+            if (!valid) {
+              console.log('Validation errors:', validate.errors);
+              process.exit(1);
+            } else {
+              console.log('✅ server.json is valid!');
+            }
+          "
+
+      - name: Install MCP Publisher
+        run: |
+          # Download with basic security checks
+          curl -L --max-time 30 --fail -o mcp-publisher.tar.gz "https://github.com/modelcontextprotocol/registry/releases/download/v1.1.0/mcp-publisher_1.1.0_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz"
+          
+          # Verify file is not empty
+          if [ ! -s mcp-publisher.tar.gz ]; then
+            echo "❌ Downloaded file is empty"
+            exit 1
+          fi
+          
+          # Extract and install
+          tar -xzf mcp-publisher.tar.gz mcp-publisher
+          chmod +x mcp-publisher
+          sudo mv mcp-publisher /usr/local/bin/
+          rm mcp-publisher.tar.gz
+
+      - name: Login to MCP Registry
+        run: mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        run: mcp-publisher publish
+
+      - name: Upload MCP logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-publish-logs
+          path: |
+            ~/.mcp-publisher/logs/*.log
+          retention-days: 7
+
+  notify:
+    name: Notify Release Status
+    needs: [publish-npm, publish-mcp]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Release Status
+        run: |
+          if [[ "${{ needs.publish-npm.result }}" == "success" && "${{ needs.publish-mcp.result }}" == "success" ]]; then
+            echo "✅ Release successful! Published to both NPM and MCP Registry"
+          elif [[ "${{ needs.publish-npm.result }}" == "success" ]]; then
+            echo "⚠️ NPM published successfully, but MCP Registry failed"
+          elif [[ "${{ needs.publish-mcp.result }}" == "success" ]]; then
+            echo "⚠️ MCP Registry published successfully, but NPM failed"
+          else
+            echo "❌ Release failed for both NPM and MCP Registry"
+            exit 1
+          fi

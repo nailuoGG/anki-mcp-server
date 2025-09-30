@@ -12,6 +12,7 @@ jobs:
     strategy:
       matrix:
         node-version: [18.x, 20.x]
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,19 +28,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint code
+        run: npm run lint
+
       - name: Build
         run: npm run build
 
-      # - name: Run tests
-      #   run: npm test
+      - name: Run tests
+        run: npm test
 
-  beta-publish:
+      - name: Validate MCP schema
+        run: npm run validate-mcp
+
+      - name: Check package validity
+        run: npm pack --dry-run
+
+  beta-publish-npm:
     name: Publish Beta to NPM
     needs: beta-test
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Changed from read to write to allow pushing tags
-      id-token: write # Required for npm provenance
+      contents: write  # Required for creating tags
+      id-token: write  # Required for npm provenance
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -71,27 +82,31 @@ jobs:
       - name: Generate beta version
         id: beta_version
         run: |
-          # Get the current version from package.json
           CURRENT_VERSION=${{ steps.current_version.outputs.version }}
-
-          # Get the latest beta version for this version if it exists
           LATEST_BETA=$(npm view anki-mcp-server versions --json | jq -r ".[] | select(. | startswith(\"$CURRENT_VERSION-beta.\"))" | sort -V | tail -n 1 || echo "")
-
+          
           if [ -z "$LATEST_BETA" ]; then
-            # No existing beta for this version, create first beta
             BETA_VERSION="$CURRENT_VERSION-beta.1"
           else
-            # Extract the beta number and increment it
             BETA_NUMBER=$(echo $LATEST_BETA | sed -E 's/.*beta\.([0-9]+)$/\1/')
             NEXT_BETA=$((BETA_NUMBER + 1))
             BETA_VERSION="$CURRENT_VERSION-beta.$NEXT_BETA"
           fi
-
+          
           echo "version=$BETA_VERSION" >> $GITHUB_OUTPUT
           echo "Beta version will be: $BETA_VERSION"
 
       - name: Update package.json version
         run: npm version ${{ steps.beta_version.outputs.version }} --no-git-tag-version
+
+      - name: Update server.json version
+        run: |
+          node -e "
+            const fs = require('fs');
+            const serverJson = JSON.parse(fs.readFileSync('server.json', 'utf8'));
+            serverJson.version = '${{ steps.beta_version.outputs.version }}';
+            fs.writeFileSync('server.json', JSON.stringify(serverJson, null, 2));
+          "
 
       - name: Publish to NPM with beta tag
         run: npm publish --provenance --access public --tag beta
@@ -102,8 +117,83 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git config --local user.email "actions@github.com"
           git remote set-url origin https://${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
           git tag v${{ steps.beta_version.outputs.version }}
           git push origin v${{ steps.beta_version.outputs.version }}
+
+  beta-publish-mcp:
+    name: Publish Beta to MCP Registry
+    needs: beta-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Validate server.json schema
+        run: |
+          curl -o server.schema.json https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json
+          node -e "
+            const Ajv = require('ajv');
+            const fs = require('fs');
+            const ajv = new Ajv({allErrors: true, verbose: true});
+            const schema = JSON.parse(fs.readFileSync('server.schema.json', 'utf8'));
+            const data = JSON.parse(fs.readFileSync('server.json', 'utf8'));
+            const validate = ajv.compile(schema);
+            const valid = validate(data);
+            if (!valid) {
+              console.log('Validation errors:', validate.errors);
+              process.exit(1);
+            } else {
+              console.log('✅ server.json is valid!');
+            }
+          "
+
+      - name: Install MCP Publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/download/v1.1.0/mcp-publisher_1.1.0_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          chmod +x mcp-publisher
+          sudo mv mcp-publisher /usr/local/bin/
+
+      - name: Login to MCP Registry
+        run: mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        run: mcp-publisher publish
+
+  beta-notify:
+    name: Notify Beta Release Status
+    needs: [beta-publish-npm, beta-publish-mcp]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Beta Release Status
+        run: |
+          if [[ "${{ needs.beta-publish-npm.result }}" == "success" && "${{ needs.beta-publish-mcp.result }}" == "success" ]]; then
+            echo "✅ Beta release successful! Published to both NPM and MCP Registry"
+          elif [[ "${{ needs.beta-publish-npm.result }}" == "success" ]]; then
+            echo "⚠️ NPM beta published successfully, but MCP Registry failed"
+          elif [[ "${{ needs.beta-publish-mcp.result }}" == "success" ]]; then
+            echo "⚠️ MCP Registry beta published successfully, but NPM failed"
+          else
+            echo "❌ Beta release failed for both NPM and MCP Registry"
+            exit 1
+          fi

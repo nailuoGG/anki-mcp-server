@@ -126,6 +126,8 @@ This server is automatically published to the MCP Registry when a new version is
 1. **Automated CI/CD**: GitHub Actions automatically publishes to both NPM and MCP Registry on successful releases
 2. **Schema Validation**: The `server.json` file is validated against the MCP schema before publishing
 3. **Version Synchronization**: Versions are kept in sync between `package.json`, `manifest.json`, and `server.json`
+4. **Comprehensive Testing**: Multi-version Node.js testing, linting, and validation before publishing
+5. **Beta Support**: Automated beta releases for testing new features
 
 #### Manual Validation
 
