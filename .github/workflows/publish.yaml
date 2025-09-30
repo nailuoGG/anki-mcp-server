@@ -14,6 +14,7 @@ jobs:
     permissions:
       contents: read
       id-token: write # Required for npm provenance
+      actions: write # Required to trigger MCP publishing workflow
 
     steps:
       - name: Checkout code
@@ -45,3 +46,14 @@ jobs:
           path: |
             /home/runner/.npm/_logs/*.log
           retention-days: 7
+
+      - name: Trigger MCP Registry Publishing
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'publish-mcp.yml',
+              ref: context.ref
+            });

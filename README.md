@@ -119,6 +119,41 @@ npm run pack
 
 This will build the project and generate a `.mcpb` archive from the current repository, validating `manifest.json`. Test by dragging it into Claude Desktop's Extensions settings. Reference: [Desktop Extensions: One-click MCP server installation for Claude Desktop](https://www.anthropic.com/engineering/desktop-extensions).
 
+### Publishing to MCP Registry
+
+This server is automatically published to the MCP Registry when a new version is released. The publishing process includes:
+
+1. **Automated CI/CD**: GitHub Actions automatically publishes to both NPM and MCP Registry on successful releases
+2. **Schema Validation**: The `server.json` file is validated against the MCP schema before publishing
+3. **Version Synchronization**: Versions are kept in sync between `package.json`, `manifest.json`, and `server.json`
+
+#### Manual Validation
+
+You can validate the MCP server configuration locally:
+
+```bash
+npm run validate-mcp
+```
+
+This will download the latest MCP schema and validate your `server.json` file.
+
+#### Manual Publishing
+
+If you need to publish manually, you can use the MCP Publisher CLI:
+
+```bash
+# Install MCP Publisher
+curl -L "https://github.com/modelcontextprotocol/registry/releases/download/v1.1.0/mcp-publisher_1.1.0_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+chmod +x mcp-publisher
+sudo mv mcp-publisher /usr/local/bin/
+
+# Login to MCP Registry
+mcp-publisher login github-oidc
+
+# Publish to MCP Registry
+mcp-publisher publish
+```
+
 ### Setup
 
 1. Install dependencies:

@@ -1,0 +1,84 @@
+{
+  "name": "com.github.nailuoGG/anki-mcp-server",
+  "version": "0.1.8",
+  "description": "MCP server for Anki flashcard management via AnkiConnect API",
+  "author": {
+    "name": "nailuoGG"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/nailuoGG/anki-mcp-server#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nailuoGG/anki-mcp-server.git",
+    "source": "https://github.com/nailuoGG/anki-mcp-server"
+  },
+  "bugs": {
+    "url": "https://github.com/nailuoGG/anki-mcp-server/issues"
+  },
+  "keywords": [
+    "anki",
+    "mcp",
+    "llm",
+    "flashcards",
+    "ankiconnect",
+    "model-context-protocol"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "server": {
+    "type": "binary",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "${__dirname}/dist/index.js",
+      "args": [],
+      "env": {}
+    }
+  },
+  "tools": [
+    {
+      "name": "list_decks",
+      "description": "List all available Anki decks"
+    },
+    {
+      "name": "create_deck",
+      "description": "Create a new Anki deck"
+    },
+    {
+      "name": "create_note",
+      "description": "Create a new note (Basic or Cloze)"
+    },
+    {
+      "name": "batch_create_notes",
+      "description": "Create multiple notes at once"
+    },
+    {
+      "name": "search_notes",
+      "description": "Search for notes using Anki query syntax"
+    },
+    {
+      "name": "get_note_info",
+      "description": "Get detailed information about a note"
+    },
+    {
+      "name": "update_note",
+      "description": "Update an existing note"
+    },
+    {
+      "name": "delete_note",
+      "description": "Delete a note"
+    },
+    {
+      "name": "list_note_types",
+      "description": "List all available note types"
+    },
+    {
+      "name": "create_note_type",
+      "description": "Create a new note type"
+    },
+    {
+      "name": "get_note_type_info",
+      "description": "Get detailed structure of a note type"
+    }
+  ]
+}
