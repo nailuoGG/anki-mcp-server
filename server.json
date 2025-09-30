@@ -6,13 +6,11 @@
 	"packages": [
 		{
 			"registryType": "npm",
-			"registryBaseUrl": "https://registry.npmjs.org",
 			"identifier": "anki-mcp-server",
 			"version": "0.1.8",
 			"transport": {
 				"type": "stdio"
-			},
-			"environmentVariables": []
+			}
 		}
 	]
 }
