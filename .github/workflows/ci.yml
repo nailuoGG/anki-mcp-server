@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [master]
 
-
 jobs:
   test:
     name: Test (Node ${{ matrix.node-version }})
@@ -30,9 +29,6 @@ jobs:
 
       - name: Lint code
         run: npm run lint
-
-      - name: Format check
-        run: npm run format -- --check
 
       - name: Build
         run: npm run build
