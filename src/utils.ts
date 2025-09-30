@@ -99,10 +99,7 @@ export class AnkiClient {
 				// Don't wait on the last attempt
 				if (attempt < maxRetries) {
 					// Exponential backoff
-					const delay = Math.min(
-						1000 * Math.pow(2, attempt),
-						this.config.retryTimeout,
-					);
+					const delay = Math.min(1000 * 2 ** attempt, this.config.retryTimeout);
 					await new Promise((resolve) => setTimeout(resolve, delay));
 				}
 			}

@@ -21,7 +21,7 @@ export class McpToolHandler {
 		tools: {
 			name: string;
 			description: string;
-			inputSchema: Record<string, any>;
+			inputSchema: Record<string, unknown>;
 		}[];
 	}> {
 		return {
@@ -316,7 +316,7 @@ export class McpToolHandler {
 	 */
 	async executeTool(
 		name: string,
-		args: any,
+		args: Record<string, unknown>,
 	): Promise<{
 		content: {
 			type: string;
@@ -357,7 +357,7 @@ export class McpToolHandler {
 					return this.deleteNote(args);
 
 				// Dynamic model-specific note creation
-				default:
+				default: {
 					const typeToolMatch = name.match(/^create_(.+)_note$/);
 					if (typeToolMatch) {
 						const modelName = typeToolMatch[1].replace(/_/g, " ");
@@ -365,6 +365,7 @@ export class McpToolHandler {
 					}
 
 					throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
+				}
 			}
 		} catch (error) {
 			if (error instanceof McpError) {
@@ -545,7 +546,12 @@ export class McpToolHandler {
 			this.ankiClient.getModelTemplates(args.modelName),
 		]);
 
-		const result: any = {
+		const result: {
+			modelName: string;
+			fields: string[];
+			templates: Record<string, { Front: string; Back: string }>;
+			css?: string;
+		} = {
 			modelName: args.modelName,
 			fields,
 			templates,
@@ -649,7 +655,7 @@ export class McpToolHandler {
 	 */
 	private async createModelSpecificNote(
 		modelName: string,
-		args: Record<string, any>,
+		args: Record<string, unknown>,
 	): Promise<{
 		content: {
 			type: string;
@@ -831,7 +837,12 @@ export class McpToolHandler {
 
 		const noteIds = await this.ankiClient.findNotes(args.query);
 
-		let notes: any[] = [];
+		let notes: {
+			noteId: number;
+			modelName: string;
+			tags: string[];
+			fields: Record<string, { value: string; order: number }>;
+		}[] = [];
 		if (noteIds.length > 0) {
 			// Get detailed info for the first 50 notes
 			const limit = Math.min(noteIds.length, 50);

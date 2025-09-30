@@ -29,7 +29,7 @@ export class AnkiMcpServer {
 	/**
 	 * Constructor
 	 */
-	constructor(port: number = 8765) {
+	constructor(port = 8765) {
 		this.server = new Server(
 			{
 				name: "anki-connect-server",

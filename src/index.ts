@@ -15,7 +15,7 @@ function parseArgs() {
 			? parseInt(args[portIndex + 1], 10)
 			: 8765;
 
-	if (isNaN(port) || port < 1 || port > 65535) {
+	if (Number.isNaN(port) || port < 1 || port > 65535) {
 		console.error(
 			"Invalid port number. Please provide a valid port between 1-65535",
 		);
