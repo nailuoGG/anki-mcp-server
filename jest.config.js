@@ -19,4 +19,6 @@ export default {
 	clearMocks: true,
 	restoreMocks: true,
 	resetMocks: true,
+	moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
+	resolver: undefined,
 };
