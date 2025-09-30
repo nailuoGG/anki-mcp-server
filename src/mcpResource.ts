@@ -65,8 +65,7 @@ export class McpResourceHandler {
 				{
 					uriTemplate: "anki://note-types/{modelName}",
 					name: "Note Type Schema",
-					description:
-						"Detailed structure information for a specific note type",
+					description: "Detailed structure information for a specific note type",
 					mimeType: "application/json",
 				},
 				{
@@ -115,7 +114,7 @@ export class McpResourceHandler {
 								count: decks.length,
 							},
 							null,
-							2,
+							2
 						),
 					},
 				],
@@ -135,7 +134,7 @@ export class McpResourceHandler {
 								count: modelNames.length,
 							},
 							null,
-							2,
+							2
 						),
 					},
 				],
@@ -155,7 +154,7 @@ export class McpResourceHandler {
 								count: schemas.length,
 							},
 							null,
-							2,
+							2
 						),
 					},
 				],
@@ -181,16 +180,13 @@ export class McpResourceHandler {
 									createTool: `create_${modelName.replace(/\s+/g, "_")}_note`,
 								},
 								null,
-								2,
+								2
 							),
 						},
 					],
 				};
 			} catch (error) {
-				throw new McpError(
-					ErrorCode.InvalidParams,
-					`Note type '${modelName}' does not exist`,
-				);
+				throw new McpError(ErrorCode.InvalidParams, `Note type '${modelName}' does not exist`);
 			}
 		}
 
@@ -215,10 +211,7 @@ export class McpResourceHandler {
 		// Check if model exists
 		const existingModels = await this.ankiClient.getModelNames();
 		if (!existingModels.includes(modelName)) {
-			throw new McpError(
-				ErrorCode.InvalidParams,
-				`Note type not found: ${modelName}`,
-			);
+			throw new McpError(ErrorCode.InvalidParams, `Note type not found: ${modelName}`);
 		}
 
 		// Get model information in parallel
@@ -248,16 +241,13 @@ export class McpResourceHandler {
 	private async getAllModelSchemas(): Promise<ModelSchema[]> {
 		// Check cache first
 		const now = Date.now();
-		if (
-			this.allModelSchemasCache &&
-			now - this.lastCacheUpdate < this.cacheExpiry
-		) {
+		if (this.allModelSchemasCache && now - this.lastCacheUpdate < this.cacheExpiry) {
 			return this.allModelSchemasCache;
 		}
 
 		const modelNames = await this.ankiClient.getModelNames();
 		const schemas = await Promise.all(
-			modelNames.map((modelName) => this.getModelSchema(modelName)),
+			modelNames.map((modelName) => this.getModelSchema(modelName))
 		);
 
 		// Update cache

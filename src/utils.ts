@@ -24,7 +24,7 @@ export class AnkiTimeoutError extends Error {
 export class AnkiApiError extends Error {
 	constructor(
 		message: string,
-		public code?: string,
+		public code?: string
 	) {
 		super(message);
 		this.name = "AnkiApiError";
@@ -84,10 +84,7 @@ export class AnkiClient {
 	 * @param maxRetries Maximum number of retries
 	 * @returns Promise with the result
 	 */
-	private async executeWithRetry<T>(
-		operation: () => Promise<T>,
-		maxRetries = 1,
-	): Promise<T> {
+	private async executeWithRetry<T>(operation: () => Promise<T>, maxRetries = 1): Promise<T> {
 		let lastError: Error | null = null;
 
 		for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -99,10 +96,7 @@ export class AnkiClient {
 				// Don't wait on the last attempt
 				if (attempt < maxRetries) {
 					// Exponential backoff
-					const delay = Math.min(
-						1000 * Math.pow(2, attempt),
-						this.config.retryTimeout,
-					);
+					const delay = Math.min(1000 * 2 ** attempt, this.config.retryTimeout);
 					await new Promise((resolve) => setTimeout(resolve, delay));
 				}
 			}
@@ -120,24 +114,21 @@ export class AnkiClient {
 			// Connection errors
 			if (error.message.includes("ECONNREFUSED")) {
 				return new AnkiConnectionError(
-					"Anki is not running. Please start Anki and ensure AnkiConnect plugin is enabled.",
+					"Anki is not running. Please start Anki and ensure AnkiConnect plugin is enabled."
 				);
 			}
 
 			// Timeout errors
-			if (
-				error.message.includes("timeout") ||
-				error.message.includes("ETIMEDOUT")
-			) {
+			if (error.message.includes("timeout") || error.message.includes("ETIMEDOUT")) {
 				return new AnkiTimeoutError(
-					"Connection to Anki timed out. Please check if Anki is responsive.",
+					"Connection to Anki timed out. Please check if Anki is responsive."
 				);
 			}
 
 			// API errors
 			if (error.message.includes("collection unavailable")) {
 				return new AnkiApiError(
-					"Anki collection is unavailable. Please close any open dialogs in Anki.",
+					"Anki collection is unavailable. Please close any open dialogs in Anki."
 				);
 			}
 
@@ -163,10 +154,7 @@ export class AnkiClient {
 			return new McpError(ErrorCode.InternalError, error.message);
 		}
 
-		return new McpError(
-			ErrorCode.InternalError,
-			`Anki error: ${error.message}`,
-		);
+		return new McpError(ErrorCode.InternalError, `Anki error: ${error.message}`);
 	}
 
 	/**
@@ -177,13 +165,11 @@ export class AnkiClient {
 			// Use a direct axios call to check connection since version() is private
 			await this.executeWithRetry(() =>
 				// @ts-ignore - yanki-connect type definitions are incomplete
-				this.client.invoke("version"),
+				this.client.invoke("version")
 			);
 			return true;
 		} catch (error) {
-			throw this.wrapError(
-				error instanceof Error ? error : new Error(String(error)),
-			);
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
 	}
 
@@ -194,9 +180,7 @@ export class AnkiClient {
 		try {
 			return await this.executeWithRetry(() => this.client.deck.deckNames());
 		} catch (error) {
-			throw this.wrapError(
-				error instanceof Error ? error : new Error(String(error)),
-			);
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
 	}
 
@@ -205,15 +189,11 @@ export class AnkiClient {
 	 */
 	async createDeck(name: string): Promise<number> {
 		try {
-			const result = await this.executeWithRetry(() =>
-				this.client.deck.createDeck({ deck: name }),
-			);
+			const result = await this.executeWithRetry(() => this.client.deck.createDeck({ deck: name }));
 			// Convert to number if needed
 			return typeof result === "number" ? result : 0;
 		} catch (error) {
-			throw this.wrapError(
-				error instanceof Error ? error : new Error(String(error)),
-			);
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
 	}
 
@@ -224,9 +204,7 @@ export class AnkiClient {
 		try {
 			return await this.executeWithRetry(() => this.client.model.modelNames());
 		} catch (error) {
-			throw this.wrapError(
-				error instanceof Error ? error : new Error(String(error)),
-			);
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
 	}
 
@@ -235,13 +213,9 @@ export class AnkiClient {
 	 */
 	async getModelFieldNames(modelName: string): Promise<string[]> {
 		try {
-			return await this.executeWithRetry(() =>
-				this.client.model.modelFieldNames({ modelName }),
-			);
+			return await this.executeWithRetry(() => this.client.model.modelFieldNames({ modelName }));
 		} catch (error) {
-			throw this.wrapError(
-				error instanceof Error ? error : new Error(String(error)),
-			);
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
 	}
 
@@ -249,16 +223,12 @@ export class AnkiClient {
 	 * Get templates for a model
 	 */
 	async getModelTemplates(
-		modelName: string,
+		modelName: string
 	): Promise<Record<string, { Front: string; Back: string }>> {
 		try {
-			return await this.executeWithRetry(() =>
-				this.client.model.modelTemplates({ modelName }),
-			);
+			return await this.executeWithRetry(() => this.client.model.modelTemplates({ modelName }));
 		} catch (error) {
-			throw this.wrapError(
-				error instanceof Error ? error : new Error(String(error)),
-			);
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
 	}
 
@@ -267,13 +237,9 @@ export class AnkiClient {
 	 */
 	async getModelStyling(modelName: string): Promise<{ css: string }> {
 		try {
-			return await this.executeWithRetry(() =>
-				this.client.model.modelStyling({ modelName }),
-			);
+			return await this.executeWithRetry(() => this.client.model.modelStyling({ modelName }));
 		} catch (error) {
-			throw this.wrapError(
-				error instanceof Error ? error : new Error(String(error)),
-			);
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
 	}
 
@@ -302,12 +268,10 @@ export class AnkiClient {
 							duplicateScope: "deck",
 						},
 					},
-				}),
+				})
 			);
 		} catch (error) {
-			throw this.wrapError(
-				error instanceof Error ? error : new Error(String(error)),
-			);
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
 	}
 
@@ -320,7 +284,7 @@ export class AnkiClient {
 			modelName: string;
 			fields: Record<string, string>;
 			tags?: string[];
-		}[],
+		}[]
 	): Promise<(string | null)[] | null> {
 		try {
 			return await this.executeWithRetry(() =>
@@ -335,12 +299,10 @@ export class AnkiClient {
 							duplicateScope: "deck",
 						},
 					})),
-				}),
+				})
 			);
 		} catch (error) {
-			throw this.wrapError(
-				error instanceof Error ? error : new Error(String(error)),
-			);
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
 	}
 
@@ -349,19 +311,13 @@ export class AnkiClient {
 	 */
 	async findNotes(query: string): Promise<number[]> {
 		try {
-			const result = await this.executeWithRetry(() =>
-				this.client.note.findNotes({ query }),
-			);
+			const result = await this.executeWithRetry(() => this.client.note.findNotes({ query }));
 			// Ensure we return an array of numbers
 			return (
-				Array.isArray(result)
-					? result.filter((id) => typeof id === "number")
-					: []
+				Array.isArray(result) ? result.filter((id) => typeof id === "number") : []
 			) as number[];
 		} catch (error) {
-			throw this.wrapError(
-				error instanceof Error ? error : new Error(String(error)),
-			);
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
 	}
 
@@ -377,9 +333,7 @@ export class AnkiClient {
 		}[]
 	> {
 		try {
-			const result = await this.executeWithRetry(() =>
-				this.client.note.notesInfo({ notes: ids }),
-			);
+			const result = await this.executeWithRetry(() => this.client.note.notesInfo({ notes: ids }));
 			// Ensure we return a valid array
 			return (Array.isArray(result) ? result : []) as {
 				noteId: number;
@@ -388,9 +342,7 @@ export class AnkiClient {
 				fields: Record<string, { value: string; order: number }>;
 			}[];
 		} catch (error) {
-			throw this.wrapError(
-				error instanceof Error ? error : new Error(String(error)),
-			);
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
 	}
 
@@ -408,12 +360,10 @@ export class AnkiClient {
 						id: params.id,
 						fields: params.fields,
 					},
-				}),
+				})
 			);
 		} catch (error) {
-			throw this.wrapError(
-				error instanceof Error ? error : new Error(String(error)),
-			);
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
 	}
 
@@ -422,13 +372,9 @@ export class AnkiClient {
 	 */
 	async deleteNotes(ids: number[]): Promise<void> {
 		try {
-			await this.executeWithRetry(() =>
-				this.client.note.deleteNotes({ notes: ids }),
-			);
+			await this.executeWithRetry(() => this.client.note.deleteNotes({ notes: ids }));
 		} catch (error) {
-			throw this.wrapError(
-				error instanceof Error ? error : new Error(String(error)),
-			);
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
 	}
 
@@ -459,12 +405,10 @@ export class AnkiClient {
 					inOrderFields: params.inOrderFields,
 					css: params.css,
 					cardTemplates: convertedTemplates,
-				}),
+				})
 			);
 		} catch (error) {
-			throw this.wrapError(
-				error instanceof Error ? error : new Error(String(error)),
-			);
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
 	}
 }
