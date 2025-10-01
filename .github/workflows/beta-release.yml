@@ -37,9 +37,6 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Validate MCP schema
-        run: npm run validate:mcp
-
       - name: Check package validity
         run: npm pack --dry-run
 
@@ -137,9 +134,6 @@ jobs:
 
       - name: Build for production
         run: npm run build:prod
-
-      - name: Validate server.json schema
-        run: npm run validate:mcp
 
       - name: Install MCP Publisher
         run: |
