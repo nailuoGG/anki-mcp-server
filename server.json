@@ -1,20 +1,29 @@
 {
-	"$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
-	"name": "io.github.nailuoGG/anki-mcp-server",
-	"description": "MCP server enabling LLMs to interact with Anki flashcard software through AnkiConnect",
-	"version": "0.1.8",
-	"repository": {
-		"url": "https://github.com/nailuoGG/anki-mcp-server",
-		"source": "github"
-	},
-	"packages": [
-		{
-			"registryType": "npm",
-			"identifier": "anki-mcp-server",
-			"version": "0.1.8",
-			"transport": {
-				"type": "stdio"
-			}
-		}
-	]
+    "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+    "name": "io.github.nailuoGG/anki-mcp-server",
+    "description": "MCP server enabling LLMs to interact with Anki flashcard software through AnkiConnect",
+    "version": "0.1.8",
+    "repository": {
+        "url": "https://github.com/nailuoGG/anki-mcp-server",
+        "source": "github"
+    },
+    "packages": [
+        {
+            "registryType": "npm",
+            "identifier": "anki-mcp-server",
+            "version": "0.1.8",
+            "transport": {
+                "type": "stdio"
+            }
+        },
+        {
+            "registryType": "mcpb",
+            "identifier": "https://github.com/nailuoGG/anki-mcp-server/releases/download/v0.1.8/anki-mcp-server.mcpb",
+            "version": "0.1.8",
+            "fileSha256": "6b16243bd350bd6ec83beb8ffe02100b6750fd68ad97fbc83ffee76aed8479a3",
+            "transport": {
+                "type": "stdio"
+            }
+        }
+    ]
 }
