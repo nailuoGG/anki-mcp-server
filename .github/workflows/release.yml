@@ -36,7 +36,7 @@ jobs:
         run: npm test
 
       - name: Validate MCP schema
-        run: npm run validate-mcp
+        run: npm run validate:mcp
 
       - name: Check package validity
         run: npm pack --dry-run
@@ -63,8 +63,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Build for production
+        run: npm run build:prod
 
       - name: Publish to NPM
         run: npm publish --provenance --access public
@@ -101,27 +101,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Build for production
+        run: npm run build:prod
 
       - name: Validate server.json schema
-        run: |
-          curl -L --max-time 30 --fail -o server.schema.json https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json
-          node -e "
-            const Ajv = require('ajv');
-            const fs = require('fs');
-            const ajv = new Ajv({allErrors: true, verbose: true});
-            const schema = JSON.parse(fs.readFileSync('server.schema.json', 'utf8'));
-            const data = JSON.parse(fs.readFileSync('server.json', 'utf8'));
-            const validate = ajv.compile(schema);
-            const valid = validate(data);
-            if (!valid) {
-              console.log('Validation errors:', validate.errors);
-              process.exit(1);
-            } else {
-              console.log('✅ server.json is valid!');
-            }
-          "
+        run: npm run validate:mcp
 
       - name: Install MCP Publisher
         run: |
