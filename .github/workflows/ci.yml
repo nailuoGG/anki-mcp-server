@@ -62,7 +62,7 @@ jobs:
 
       - name: Test MCP Inspector
         run: |
-          timeout 10s npm run inspector || true
+          timeout 10s npm run inspect || true
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
