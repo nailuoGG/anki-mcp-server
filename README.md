@@ -197,7 +197,7 @@ This executes tests for:
 Since MCP servers communicate over stdio, we recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector):
 
 ```bash
-npm run inspector
+npm run inspect
 ```
 
 This provides a browser-based interface for:
