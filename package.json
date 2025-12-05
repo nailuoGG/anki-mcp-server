@@ -29,7 +29,7 @@
         "src/**/*.test.ts": ["biome format --write", "git add"]
     },
     "dependencies": {
-        "@modelcontextprotocol/sdk": "1.18.2",
+        "@modelcontextprotocol/sdk": "1.24.0",
         "axios": "1.12.1",
         "yanki-connect": "3.0.5"
     },
