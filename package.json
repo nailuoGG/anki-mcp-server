@@ -7,7 +7,9 @@
     "bin": {
         "anki-mcp-server": "dist/index.js"
     },
-    "files": ["dist"],
+    "files": [
+        "dist"
+    ],
     "scripts": {
         "prepare": "husky",
         "prebuild": "node -p \"'export const MCP_VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/_version.ts",
@@ -25,8 +27,14 @@
         "test:language": "node test-language.js"
     },
     "lint-staged": {
-        "src/**/*.{js,jsx,ts,tsx}": ["biome format --write", "git add"],
-        "src/**/*.test.ts": ["biome format --write", "git add"]
+        "src/**/*.{js,jsx,ts,tsx}": [
+            "biome format --write",
+            "git add"
+        ],
+        "src/**/*.test.ts": [
+            "biome format --write",
+            "git add"
+        ]
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "1.24.0",
@@ -78,5 +86,6 @@
     },
     "publishConfig": {
         "access": "public"
-    }
+    },
+    "packageManager": "pnpm@10.25.0+sha512.5e82639027af37cf832061bcc6d639c219634488e0f2baebe785028a793de7b525ffcd3f7ff574f5e9860654e098fe852ba8ac5dd5cefe1767d23a020a92f501"
 }
