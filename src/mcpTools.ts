@@ -10,8 +10,8 @@ import { AnkiClient } from "./utils.js";
 export class McpToolHandler {
 	private ankiClient: AnkiClient;
 
-	constructor() {
-		this.ankiClient = new AnkiClient();
+	constructor(ankiClient?: AnkiClient) {
+		this.ankiClient = ankiClient ?? new AnkiClient();
 	}
 
 	/**
@@ -730,7 +730,7 @@ export class McpToolHandler {
 			index: number;
 		}[] = [];
 
-		const stopOnError = args.stopOnError !== false;
+		const stopOnError = args.stopOnError ?? false;
 
 		// Process each note
 		for (let i = 0; i < args.notes.length; i++) {
