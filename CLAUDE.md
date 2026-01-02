@@ -21,7 +21,7 @@ npm run build
 npm run watch
 
 # Run the MCP Inspector for debugging
-npm run inspector
+npm run inspect
 ```
 
 ### Testing
