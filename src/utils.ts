@@ -164,7 +164,7 @@ export class AnkiClient {
 		try {
 			// Use a direct axios call to check connection since version() is private
 			await this.executeWithRetry(() =>
-				// @ts-ignore - yanki-connect type definitions are incomplete
+				// @ts-expect-error - yanki-connect type definitions are incomplete
 				this.client.invoke("version")
 			);
 			return true;
@@ -349,10 +349,7 @@ export class AnkiClient {
 	/**
 	 * Update note fields
 	 */
-	async updateNoteFields(params: {
-		id: number;
-		fields: Record<string, string>;
-	}): Promise<void> {
+	async updateNoteFields(params: { id: number; fields: Record<string, string> }): Promise<void> {
 		try {
 			await this.executeWithRetry(() =>
 				this.client.note.updateNoteFields({

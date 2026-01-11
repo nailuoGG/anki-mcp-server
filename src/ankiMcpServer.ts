@@ -101,7 +101,7 @@ export class AnkiMcpServer {
 	private async checkConnection(): Promise<void> {
 		try {
 			await this.ankiClient.checkConnection();
-		} catch (error) {
+		} catch (_error) {
 			throw new McpError(
 				ErrorCode.InternalError,
 				"Failed to connect to Anki. Please make sure Anki is running and the AnkiConnect plugin is enabled."
