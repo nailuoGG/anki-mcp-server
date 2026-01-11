@@ -13,18 +13,17 @@
     "scripts": {
         "prepare": "husky",
         "prebuild": "node -p \"'export const MCP_VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/_version.ts",
-        "build": "tsup",
-        "watch": "tsup --watch",
-        "mcpb": "npm run build && mcpb pack",
-        "validate-mcp": "curl -o server.schema.json https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json && node -e \"const Ajv = require('ajv'); const fs = require('fs'); const ajv = new Ajv({allErrors: true, verbose: true}); const schema = JSON.parse(fs.readFileSync('server.schema.json', 'utf8')); const data = JSON.parse(fs.readFileSync('server.json', 'utf8')); const validate = ajv.compile(schema); const valid = validate(data); if (!valid) { console.log('Validation errors:', validate.errors); process.exit(1); } else { console.log('✅ server.json is valid!'); }\" && rm server.schema.json",
+        "dev": "tsup --watch",
+        "build": "node scripts/build.js",
+        "build:prod": "node scripts/build.js --prod",
+        "build:no-mcpb": "node scripts/build.js --no-mcpb",
+        "test": "jest --runInBand --detectOpenHandles",
+        "release": "node scripts/build.js --prod",
         "format": "biome format . --write",
         "lint": "biome lint src/",
         "check": "biome check --apply .",
-        "inspector": "npx @modelcontextprotocol/inspector dist/index.js",
-        "test": "jest --runInBand --detectOpenHandles",
-        "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
-        "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
-        "test:language": "node test-language.js"
+        "validate:mcp": "curl -o server.schema.json https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json && node -e \"const Ajv = require('ajv'); const fs = require('fs'); const ajv = new Ajv({allErrors: true, verbose: true}); const schema = JSON.parse(fs.readFileSync('server.schema.json', 'utf8')); const data = JSON.parse(fs.readFileSync('server.json', 'utf8')); const validate = ajv.compile(schema); const valid = validate(data); if (!valid) { console.log('Validation errors:', validate.errors); process.exit(1); } else { console.log('✅ server.json is valid!'); }\" && rm server.schema.json",
+        "inspect": "npx @modelcontextprotocol/inspector dist/index.js"
     },
     "lint-staged": {
         "src/**/*.{js,jsx,ts,tsx}": [

@@ -15,6 +15,15 @@
 			"transport": {
 				"type": "stdio"
 			}
+		},
+		{
+			"registryType": "mcpb",
+			"identifier": "https://github.com/nailuoGG/anki-mcp-server/releases/download/v0.1.8/anki-mcp-server.mcpb",
+			"version": "0.1.8",
+			"fileSha256": "667da3509419cfee617a7c680835e58a429a075e509f54d7b8bfaa01186689e6",
+			"transport": {
+				"type": "stdio"
+			}
 		}
 	]
 }
