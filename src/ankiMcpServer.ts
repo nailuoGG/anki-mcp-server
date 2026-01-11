@@ -118,33 +118,13 @@ export class AnkiMcpServer {
 		console.error("Anki MCP server running on stdio");
 
 		// Send notifications to inform client about available tools and resources
-		await this.notifyToolsListChanged();
-		await this.notifyResourcesListChanged();
-	}
-
-	/**
-	 * Notify client that tools list has changed
-	 */
-	private async notifyToolsListChanged() {
 		try {
-			await this.server.notify({
-				method: "notifications/tools/list_changed",
-				params: {},
-			});
+			await this.server.sendToolListChanged();
 		} catch (error) {
 			console.error("Failed to send tools list changed notification:", error);
 		}
-	}
-
-	/**
-	 * Notify client that resources list has changed
-	 */
-	private async notifyResourcesListChanged() {
 		try {
-			await this.server.notify({
-				method: "notifications/resources/list_changed",
-				params: {},
-			});
+			await this.server.sendResourceListChanged();
 		} catch (error) {
 			console.error("Failed to send resources list changed notification:", error);
 		}
