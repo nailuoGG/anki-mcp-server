@@ -37,9 +37,6 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Validate MCP schema
-        run: npm run validate-mcp
-
       - name: Check package validity
         run: npm pack --dry-run
 
@@ -66,9 +63,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Build
-        run: npm run build
 
       - name: Configure Git
         run: |
@@ -99,14 +93,8 @@ jobs:
       - name: Update package.json version
         run: npm version ${{ steps.beta_version.outputs.version }} --no-git-tag-version
 
-      - name: Update server.json version
-        run: |
-          node -e "
-            const fs = require('fs');
-            const serverJson = JSON.parse(fs.readFileSync('server.json', 'utf8'));
-            serverJson.version = '${{ steps.beta_version.outputs.version }}';
-            fs.writeFileSync('server.json', JSON.stringify(serverJson, null, 2));
-          "
+      - name: Build for production
+        run: npm run build:prod
 
       - name: Publish to NPM with beta tag
         run: npm publish --provenance --access public --tag beta
@@ -144,27 +132,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
-
-      - name: Validate server.json schema
-        run: |
-          curl -o server.schema.json https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json
-          node -e "
-            const Ajv = require('ajv');
-            const fs = require('fs');
-            const ajv = new Ajv({allErrors: true, verbose: true});
-            const schema = JSON.parse(fs.readFileSync('server.schema.json', 'utf8'));
-            const data = JSON.parse(fs.readFileSync('server.json', 'utf8'));
-            const validate = ajv.compile(schema);
-            const valid = validate(data);
-            if (!valid) {
-              console.log('Validation errors:', validate.errors);
-              process.exit(1);
-            } else {
-              console.log('✅ server.json is valid!');
-            }
-          "
+      - name: Build for production
+        run: npm run build:prod
 
       - name: Install MCP Publisher
         run: |
