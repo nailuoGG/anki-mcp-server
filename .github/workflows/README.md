@@ -8,51 +8,36 @@ This directory contains the GitHub Actions workflows for the Anki MCP Server pro
 **Trigger:** Push to `master` branch, Pull Requests to `master`
 **Purpose:** Continuous Integration - Code quality and testing
 
-**Jobs:**
+**Jobs (pnpm-based):**
 - `test`: Multi-version testing (Node 18.x, 20.x, 22.x)
-  - Lint code
-  - Format check
-  - Build project
-  - Run tests
+  - pnpm install (frozen lockfile)
+  - Version alignment check
+  - Lint, build, test
   - Validate MCP schema
   - Check package validity
-- `build-check`: Build verification
+- `build-check`: Build verification on Node 20.x
+  - Build
   - Test MCP Inspector
   - Upload build artifacts
 
 ### 2. Release Workflow (`release.yml`)
-**Trigger:** GitHub Release created
-**Purpose:** Publish stable releases to NPM and MCP Registry
+**Trigger:** GitHub Release created or tag push
+**Purpose:** Publish stable releases to npm and MCP Registry
 
 **Jobs:**
-- `test`: Pre-release testing (Node 18.x, 20.x, 22.x)
-  - Same as CI test job
-- `publish-npm`: Publish to NPM
-  - Build and publish to NPM with provenance
-  - Upload NPM logs
-- `publish-mcp`: Publish to MCP Registry
-  - Validate server.json schema
-  - Install MCP Publisher CLI
-  - Login with OIDC
-  - Publish to MCP Registry
-  - Upload MCP logs
+- `test`: Pre-release testing (Node 18.x, 20.x, 22.x) with version alignment check
+- `publish-npm`: Publish to npm with provenance after pnpm install/build/validate
+- `publish-mcp`: Publish to MCP Registry after pnpm install/build/validate
 - `notify`: Release status notification
-  - Report success/failure status
 
 ### 3. Beta Release Workflow (`beta-release.yml`)
-**Trigger:** Push to `release-beta/*` branches
+**Trigger:** Push to `release-beta/*`, `fix/*`, or `feat/*` branches
 **Purpose:** Publish beta releases for testing
 
 **Jobs:**
-- `beta-test`: Beta testing (Node 18.x, 20.x)
-  - Same as CI test job
-- `beta-publish-npm`: Publish beta to NPM
-  - Generate beta version number
-  - Update package.json and server.json versions
-  - Publish with beta tag
-  - Create Git tag
-- `beta-publish-mcp`: Publish beta to MCP Registry
-  - Same as release MCP publishing
+- `beta-test`: Beta testing (Node 18.x, 20.x) with pnpm
+- `beta-publish-npm`: Generate beta version, update package/manifest/server versions, publish to npm with beta tag, create git tag
+- `beta-publish-mcp`: Apply same beta version and publish to MCP Registry
 - `beta-notify`: Beta release status notification
 
 ## Key Features
@@ -86,7 +71,7 @@ This directory contains the GitHub Actions workflows for the Anki MCP Server pro
 ## Usage
 
 ### Creating a Release
-1. Update version in `package.json`
+1. Update version in `package.json`, `manifest.json`, and `server.json`
 2. Create a GitHub Release
 3. Workflows automatically handle testing and publishing
 

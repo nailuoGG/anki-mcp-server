@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - release-beta/*
+      - fix/*
+      - feat/*
 
 jobs:
   beta-test:
-    name: Beta Release Test
+    name: Beta Release Test (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -19,37 +21,49 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.25.0
+          run_install: false
+
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+
+      - name: Check version alignment
+        run: pnpm check:versions
 
       - name: Lint code
-        run: npm run lint
+        run: pnpm lint
 
       - name: Build
-        run: npm run build
+        run: pnpm build
 
       - name: Run tests
-        run: npm test
+        run: pnpm test
 
       - name: Validate MCP schema
-        run: npm run validate-mcp
+        run: pnpm validate-mcp
 
       - name: Check package validity
         run: npm pack --dry-run
 
   beta-publish-npm:
-    name: Publish Beta to NPM
+    name: Publish Beta to npm
     needs: beta-test
     runs-on: ubuntu-latest
     permissions:
       contents: write  # Required for creating tags
       id-token: write  # Required for npm provenance
+    outputs:
+      beta_version: ${{ steps.beta_version.outputs.version }}
     
     steps:
       - name: Checkout code
@@ -57,18 +71,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.25.0
+          run_install: false
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20.x"
           registry-url: "https://registry.npmjs.org"
-          cache: "npm"
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
+        run: pnpm install --frozen-lockfile
 
       - name: Configure Git
         run: |
@@ -97,16 +115,29 @@ jobs:
           echo "Beta version will be: $BETA_VERSION"
 
       - name: Update package.json version
-        run: npm version ${{ steps.beta_version.outputs.version }} --no-git-tag-version
+        run: pnpm version ${{ steps.beta_version.outputs.version }} --no-git-tag-version
 
-      - name: Update server.json version
+      - name: Update manifest/server versions
         run: |
           node -e "
             const fs = require('fs');
+            const version = '${{ steps.beta_version.outputs.version }}';
+            const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
+            manifest.version = version;
+            fs.writeFileSync('manifest.json', JSON.stringify(manifest, null, 2));
             const serverJson = JSON.parse(fs.readFileSync('server.json', 'utf8'));
-            serverJson.version = '${{ steps.beta_version.outputs.version }}';
+            serverJson.version = version;
+            if (serverJson.packages && serverJson.packages[0]) {
+              serverJson.packages[0].version = version;
+            }
             fs.writeFileSync('server.json', JSON.stringify(serverJson, null, 2));
           "
+
+      - name: Check version alignment
+        run: pnpm check:versions
+
+      - name: Build
+        run: pnpm build
 
       - name: Publish to NPM with beta tag
         run: npm publish --provenance --access public --tag beta
@@ -125,7 +156,7 @@ jobs:
 
   beta-publish-mcp:
     name: Publish Beta to MCP Registry
-    needs: beta-test
+    needs: [beta-test, beta-publish-npm]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -135,17 +166,46 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.25.0
+          run_install: false
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20.x"
-          cache: "npm"
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply beta version
+        env:
+          BETA_VERSION: ${{ needs.beta-publish-npm.outputs.beta_version }}
+        run: |
+          pnpm version ${BETA_VERSION} --no-git-tag-version
+          node -e "
+            const fs = require('fs');
+            const version = process.env.BETA_VERSION;
+            const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
+            manifest.version = version;
+            fs.writeFileSync('manifest.json', JSON.stringify(manifest, null, 2));
+            const serverJson = JSON.parse(fs.readFileSync('server.json', 'utf8'));
+            serverJson.version = version;
+            if (serverJson.packages && serverJson.packages[0]) {
+              serverJson.packages[0].version = version;
+            }
+            fs.writeFileSync('server.json', JSON.stringify(serverJson, null, 2));
+          "
+
+      - name: Check version alignment
+        run: pnpm check:versions
 
       - name: Build
-        run: npm run build
+        run: pnpm build
 
       - name: Validate server.json schema
         run: |

@@ -3,11 +3,15 @@ name: Release
 on:
   release:
     types: [created]
+  push:
+    tags:
+      - "v*.*.*"
+      - "*.*.*"
   workflow_dispatch:
 
 jobs:
   test:
-    name: Pre-release Tests
+    name: Pre-release Tests (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -17,56 +21,81 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.25.0
+          run_install: false
+
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+
+      - name: Check version alignment
+        run: pnpm check:versions
 
       - name: Lint code
-        run: npm run lint
+        run: pnpm lint
 
       - name: Build
-        run: npm run build
+        run: pnpm build
 
       - name: Run tests
-        run: npm test
+        run: pnpm test
 
       - name: Validate MCP schema
-        run: npm run validate-mcp
+        run: pnpm validate-mcp
 
       - name: Check package validity
         run: npm pack --dry-run
 
   publish-npm:
-    name: Publish to NPM
+    name: Publish to npm
     needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write  # Required for npm provenance
+      id-token: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.25.0
+          run_install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20.x"
           registry-url: "https://registry.npmjs.org"
-          cache: "npm"
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+
+      - name: Check version alignment
+        run: pnpm check:versions
 
       - name: Build
-        run: npm run build
+        run: pnpm build
 
-      - name: Publish to NPM
+      - name: Validate MCP schema
+        run: pnpm validate-mcp
+
+      - name: Publish to npm
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -92,17 +121,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.25.0
+          run_install: false
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20.x"
-          cache: "npm"
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+
+      - name: Check version alignment
+        run: pnpm check:versions
 
       - name: Build
-        run: npm run build
+        run: pnpm build
 
       - name: Validate server.json schema
         run: |
@@ -125,16 +164,11 @@ jobs:
 
       - name: Install MCP Publisher
         run: |
-          # Download with basic security checks
           curl -L --max-time 30 --fail -o mcp-publisher.tar.gz "https://github.com/modelcontextprotocol/registry/releases/download/v1.1.0/mcp-publisher_1.1.0_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz"
-          
-          # Verify file is not empty
           if [ ! -s mcp-publisher.tar.gz ]; then
             echo "❌ Downloaded file is empty"
             exit 1
           fi
-          
-          # Extract and install
           tar -xzf mcp-publisher.tar.gz mcp-publisher
           chmod +x mcp-publisher
           sudo mv mcp-publisher /usr/local/bin/

@@ -18,8 +18,9 @@ Update the version in `package.json` according to [Semantic Versioning](https://
 - **Patch version (0.0.x)**: Bug fixes and minor changes
 
 ```bash
-# Update version
-npm version patch  # or minor, or major
+# Update versions (package.json, manifest.json, server.json)
+pnpm version patch  # or minor, or major
+pnpm check:versions
 ```
 
 ### 2. Update Changelog

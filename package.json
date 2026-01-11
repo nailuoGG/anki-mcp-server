@@ -10,18 +10,19 @@
     "files": [
         "dist"
     ],
-    "scripts": {
-        "prepare": "husky",
-        "prebuild": "node -p \"'export const MCP_VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/_version.ts",
-        "build": "tsup",
-        "watch": "tsup --watch",
-        "mcpb": "npm run build && mcpb pack",
-        "validate-mcp": "curl -o server.schema.json https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json && node -e \"const Ajv = require('ajv'); const fs = require('fs'); const ajv = new Ajv({allErrors: true, verbose: true}); const schema = JSON.parse(fs.readFileSync('server.schema.json', 'utf8')); const data = JSON.parse(fs.readFileSync('server.json', 'utf8')); const validate = ajv.compile(schema); const valid = validate(data); if (!valid) { console.log('Validation errors:', validate.errors); process.exit(1); } else { console.log('✅ server.json is valid!'); }\" && rm server.schema.json",
-        "format": "biome format . --write",
-        "lint": "biome lint src/",
-        "check": "biome check --apply .",
-        "inspector": "npx @modelcontextprotocol/inspector dist/index.js",
-        "test": "jest --runInBand --detectOpenHandles",
+	"scripts": {
+		"prepare": "husky",
+		"prebuild": "node -p \"'export const MCP_VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/_version.ts",
+		"build": "tsup",
+		"watch": "tsup --watch",
+		"mcpb": "pnpm run build && mcpb pack",
+		"validate-mcp": "curl -o server.schema.json https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json && node -e \"const Ajv = require('ajv'); const fs = require('fs'); const ajv = new Ajv({allErrors: true, verbose: true}); const schema = JSON.parse(fs.readFileSync('server.schema.json', 'utf8')); const data = JSON.parse(fs.readFileSync('server.json', 'utf8')); const validate = ajv.compile(schema); const valid = validate(data); if (!valid) { console.log('Validation errors:', validate.errors); process.exit(1); } else { console.log('✅ server.json is valid!'); }\" && rm server.schema.json",
+		"check:versions": "node scripts/check-version-sync.mjs",
+		"format": "biome format . --write",
+		"lint": "biome lint src/",
+		"check": "biome check --apply .",
+		"inspector": "npx @modelcontextprotocol/inspector dist/index.js",
+		"test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --detectOpenHandles",
         "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
         "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
         "test:language": "node test-language.js"
@@ -38,16 +39,17 @@
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "1.25.1",
-        "axios": "1.13.2",
-        "yanki-connect": "3.2.2"
-    },
-    "devDependencies": {
-        "@anthropic-ai/mcpb": "2.1.2",
-        "@biomejs/biome": "2.3.10",
-        "@jest/globals": "30.2.0",
-        "@types/jest": "30.0.0",
-        "@types/node": "25.0.3",
-        "axios-mock-adapter": "2.1.0",
+		"axios": "1.13.2",
+		"yanki-connect": "3.2.2"
+	},
+	"devDependencies": {
+		"@anthropic-ai/mcpb": "2.1.2",
+		"ajv": "^8.17.1",
+		"@biomejs/biome": "2.3.10",
+		"@jest/globals": "30.2.0",
+		"@types/jest": "30.0.0",
+		"@types/node": "25.0.3",
+		"axios-mock-adapter": "2.1.0",
         "husky": "^9.1.7",
         "jest": "30.2.0",
         "lint-staged": "^16.2.7",

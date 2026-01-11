@@ -33,6 +33,9 @@ importers:
       '@types/node':
         specifier: 25.0.3
         version: 25.0.3
+      ajv:
+        specifier: ^8.17.1
+        version: 8.17.1
       axios-mock-adapter:
         specifier: 2.1.0
         version: 2.1.0(axios@1.13.2)
