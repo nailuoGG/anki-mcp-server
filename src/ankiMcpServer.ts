@@ -51,8 +51,8 @@ export class AnkiMcpServer {
 		this.ankiClient = new AnkiClient({
 			ankiConnectUrl: `http://localhost:${port}`,
 		});
-		this.resourceHandler = new McpResourceHandler();
-		this.toolHandler = new McpToolHandler();
+		this.resourceHandler = new McpResourceHandler(this.ankiClient);
+		this.toolHandler = new McpToolHandler(this.ankiClient);
 
 		this.setupHandlers();
 

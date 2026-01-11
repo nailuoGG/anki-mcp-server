@@ -14,8 +14,8 @@ export class McpResourceHandler {
 	private cacheExpiry: number;
 	private lastCacheUpdate: number;
 
-	constructor() {
-		this.ankiClient = new AnkiClient();
+	constructor(ankiClient?: AnkiClient) {
+		this.ankiClient = ankiClient ?? new AnkiClient();
 		this.modelSchemaCache = new Map();
 		this.allModelSchemasCache = null;
 		this.cacheExpiry = 5 * 60 * 1000; // 5 minutes
