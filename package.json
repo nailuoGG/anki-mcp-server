@@ -37,7 +37,7 @@
         ]
     },
     "dependencies": {
-        "@modelcontextprotocol/sdk": "1.25.1",
+        "@modelcontextprotocol/sdk": "1.25.2",
         "axios": "1.13.2",
         "yanki-connect": "3.2.2"
     },
