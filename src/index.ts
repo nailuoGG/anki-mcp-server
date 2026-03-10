@@ -17,7 +17,10 @@ function parseArgs() {
 		process.exit(1);
 	}
 
-	return { port };
+	const hostIndex = args.indexOf("--host");
+	const host = hostIndex !== -1 && args[hostIndex + 1] ? args[hostIndex + 1] : "localhost";
+
+	return { port, host };
 }
 
 /**
@@ -25,8 +28,8 @@ function parseArgs() {
  */
 async function main() {
 	try {
-		const { port } = parseArgs();
-		const server = new AnkiMcpServer(port);
+		const { port, host } = parseArgs();
+		const server = new AnkiMcpServer(port, host);
 		await server.run();
 	} catch (error) {
 		console.error("Failed to start Anki MCP Server:", error);

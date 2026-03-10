@@ -1,8 +1,8 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.5.3/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
 	"files": {
 		"ignoreUnknown": false,
-		"ignore": ["**/*.test.ts", "**/*.spec.ts"]
+		"includes": ["**", "!**/*.test.ts", "!**/*.spec.ts"]
 	},
 	"formatter": {
 		"enabled": true,
@@ -12,9 +12,7 @@
 		"lineEnding": "lf",
 		"lineWidth": 100
 	},
-	"organizeImports": {
-		"enabled": true
-	},
+	"assist": { "actions": { "source": { "organizeImports": "on" } } },
 	"linter": {
 		"enabled": true,
 		"rules": {
@@ -25,7 +23,7 @@
 		"formatter": {
 			"jsxQuoteStyle": "double",
 			"quoteProperties": "asNeeded",
-			"trailingComma": "es5",
+			"trailingCommas": "es5",
 			"semicolons": "always",
 			"arrowParentheses": "always",
 			"bracketSpacing": true,
