@@ -10,8 +10,8 @@ import { AnkiClient } from "./utils.js";
 export class McpToolHandler {
 	private ankiClient: AnkiClient;
 
-	constructor() {
-		this.ankiClient = new AnkiClient();
+	constructor(ankiClient?: AnkiClient) {
+		this.ankiClient = ankiClient ?? new AnkiClient();
 	}
 
 	/**
@@ -511,10 +511,7 @@ export class McpToolHandler {
 	/**
 	 * Get note type info
 	 */
-	private async getNoteTypeInfo(args: {
-		modelName: string;
-		includeCss?: boolean;
-	}): Promise<{
+	private async getNoteTypeInfo(args: { modelName: string; includeCss?: boolean }): Promise<{
 		content: {
 			type: string;
 			text: string;
