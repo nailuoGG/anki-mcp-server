@@ -727,7 +727,7 @@ export class McpToolHandler {
 			index: number;
 		}[] = [];
 
-		const stopOnError = args.stopOnError !== false;
+		const stopOnError = args.stopOnError ?? false;
 
 		// Process each note
 		for (let i = 0; i < args.notes.length; i++) {
