@@ -107,6 +107,18 @@ For Cline, you can also specify a custom port:
 }
 ```
 
+## Agent Skills (Claude Code)
+
+Install the Anki skill to give Claude Code built-in knowledge of all Anki tools and workflows:
+
+```bash
+npx skills add nailuoGG/anki-mcp-server@anki
+```
+
+Once installed, Claude Code will automatically use the skill when you ask it to create flashcards, manage decks, or batch import notes.
+
+> **Note:** Do not use the `.mcpb` packaged version as the MCP server — it outputs Electron metadata to stdout which breaks the MCP stdio protocol. Use `npx -y anki-mcp-server` instead.
+
 ## Development
 
 ### Packaging a Desktop Extension (.mcpb)
