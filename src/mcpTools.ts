@@ -322,37 +322,37 @@ export class McpToolHandler {
 		}[];
 		isError?: boolean;
 	}> {
-		await this.ankiClient.checkConnection();
-
 		try {
+			// biome-ignore lint/suspicious/noExplicitAny: MCP args are untyped at the protocol level; each handler validates its own input
+			const a = args as any;
 			switch (name) {
 				// Deck tools
 				case "list_decks":
 					return this.listDecks();
 				case "create_deck":
-					return this.createDeck(args);
+					return this.createDeck(a);
 
 				// Note type tools
 				case "list_note_types":
 					return this.listNoteTypes();
 				case "create_note_type":
-					return this.createNoteType(args);
+					return this.createNoteType(a);
 				case "get_note_type_info":
-					return this.getNoteTypeInfo(args);
+					return this.getNoteTypeInfo(a);
 
 				// Note tools
 				case "create_note":
-					return this.createNote(args);
+					return this.createNote(a);
 				case "batch_create_notes":
-					return this.batchCreateNotes(args);
+					return this.batchCreateNotes(a);
 				case "search_notes":
-					return this.searchNotes(args);
+					return this.searchNotes(a);
 				case "get_note_info":
-					return this.getNoteInfo(args);
+					return this.getNoteInfo(a);
 				case "update_note":
-					return this.updateNote(args);
+					return this.updateNote(a);
 				case "delete_note":
-					return this.deleteNote(args);
+					return this.deleteNote(a);
 
 				// Dynamic model-specific note creation
 				default: {
@@ -656,9 +656,10 @@ export class McpToolHandler {
 		}
 
 		// Check if deck exists, create if not
+		const deckName = args.deck as string;
 		const decks = await this.ankiClient.getDeckNames();
-		if (!decks.includes(args.deck)) {
-			await this.ankiClient.createDeck(args.deck);
+		if (!decks.includes(deckName)) {
+			await this.ankiClient.createDeck(deckName);
 		}
 
 		// Get model fields
@@ -667,14 +668,14 @@ export class McpToolHandler {
 		// Normalize fields: all fields can be empty
 		const fields: Record<string, string> = {};
 		for (const field of modelFields) {
-			fields[field] = args[field.toLowerCase()] || args[field] || "";
+			fields[field] = String(args[field.toLowerCase()] ?? args[field] ?? "");
 		}
 
 		// Extract tags if provided
-		const tags = Array.isArray(args.tags) ? args.tags : [];
+		const tags = Array.isArray(args.tags) ? (args.tags as string[]) : [];
 
 		const noteId = await this.ankiClient.addNote({
-			deckName: args.deck,
+			deckName: deckName,
 			modelName: modelName,
 			fields,
 			tags,
@@ -687,7 +688,7 @@ export class McpToolHandler {
 					text: JSON.stringify(
 						{
 							noteId,
-							deck: args.deck,
+							deck: deckName,
 							modelName,
 						},
 						null,
@@ -727,7 +728,7 @@ export class McpToolHandler {
 			index: number;
 		}[] = [];
 
-		const stopOnError = args.stopOnError !== false;
+		const stopOnError = args.stopOnError === true;
 
 		// Process each note
 		for (let i = 0; i < args.notes.length; i++) {

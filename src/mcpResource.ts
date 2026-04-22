@@ -185,7 +185,7 @@ export class McpResourceHandler {
 						},
 					],
 				};
-			} catch (error) {
+			} catch (_error) {
 				throw new McpError(ErrorCode.InvalidParams, `Note type '${modelName}' does not exist`);
 			}
 		}

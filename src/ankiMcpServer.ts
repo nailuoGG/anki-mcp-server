@@ -91,7 +91,7 @@ export class AnkiMcpServer {
 
 		this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
 			await this.checkConnection();
-			return this.toolHandler.executeTool(request.params.name, request.params.arguments);
+			return this.toolHandler.executeTool(request.params.name, request.params.arguments ?? {});
 		});
 	}
 
@@ -101,7 +101,7 @@ export class AnkiMcpServer {
 	private async checkConnection(): Promise<void> {
 		try {
 			await this.ankiClient.checkConnection();
-		} catch (error) {
+		} catch (_error) {
 			throw new McpError(
 				ErrorCode.InternalError,
 				"Failed to connect to Anki. Please make sure Anki is running and the AnkiConnect plugin is enabled."

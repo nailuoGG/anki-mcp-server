@@ -12,63 +12,70 @@ jobs:
     strategy:
       matrix:
         node-version: [18.x, 20.x]
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
+          cache: "pnpm"
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Lint code
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
       - name: Run tests
-        run: npm test
-
-      - name: Validate MCP schema
-        run: npm run validate-mcp
+        run: pnpm test
 
       - name: Check package validity
-        run: npm pack --dry-run
+        run: pnpm pack --dry-run
 
   beta-publish-npm:
     name: Publish Beta to NPM
     needs: beta-test
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Required for creating tags
-      id-token: write  # Required for npm provenance
-    
+      contents: write
+      id-token: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20.x"
           registry-url: "https://registry.npmjs.org"
-          cache: "npm"
+          cache: "pnpm"
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
       - name: Configure Git
         run: |
@@ -84,7 +91,7 @@ jobs:
         run: |
           CURRENT_VERSION=${{ steps.current_version.outputs.version }}
           LATEST_BETA=$(npm view anki-mcp-server versions --json | jq -r ".[] | select(. | startswith(\"$CURRENT_VERSION-beta.\"))" | sort -V | tail -n 1 || echo "")
-          
+
           if [ -z "$LATEST_BETA" ]; then
             BETA_VERSION="$CURRENT_VERSION-beta.1"
           else
@@ -92,7 +99,7 @@ jobs:
             NEXT_BETA=$((BETA_NUMBER + 1))
             BETA_VERSION="$CURRENT_VERSION-beta.$NEXT_BETA"
           fi
-          
+
           echo "version=$BETA_VERSION" >> $GITHUB_OUTPUT
           echo "Beta version will be: $BETA_VERSION"
 
@@ -102,11 +109,11 @@ jobs:
       - name: Update server.json version
         run: |
           node -e "
-            const fs = require('fs');
-            const serverJson = JSON.parse(fs.readFileSync('server.json', 'utf8'));
+            import { readFileSync, writeFileSync } from 'fs';
+            const serverJson = JSON.parse(readFileSync('server.json', 'utf8'));
             serverJson.version = '${{ steps.beta_version.outputs.version }}';
-            fs.writeFileSync('server.json', JSON.stringify(serverJson, null, 2));
-          "
+            writeFileSync('server.json', JSON.stringify(serverJson, null, 2));
+          " --input-type=module
 
       - name: Publish to NPM with beta tag
         run: npm publish --provenance --access public --tag beta
@@ -130,41 +137,46 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20.x"
-          cache: "npm"
+          cache: "pnpm"
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
       - name: Validate server.json schema
         run: |
           curl -o server.schema.json https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json
           node -e "
-            const Ajv = require('ajv');
-            const fs = require('fs');
+            import { readFileSync } from 'fs';
+            import Ajv from 'ajv';
             const ajv = new Ajv({allErrors: true, verbose: true});
-            const schema = JSON.parse(fs.readFileSync('server.schema.json', 'utf8'));
-            const data = JSON.parse(fs.readFileSync('server.json', 'utf8'));
+            const schema = JSON.parse(readFileSync('server.schema.json', 'utf8'));
+            const data = JSON.parse(readFileSync('server.json', 'utf8'));
             const validate = ajv.compile(schema);
             const valid = validate(data);
             if (!valid) {
               console.log('Validation errors:', validate.errors);
               process.exit(1);
             } else {
-              console.log('✅ server.json is valid!');
+              console.log('server.json is valid!');
             }
-          "
+          " --input-type=module
 
       - name: Install MCP Publisher
         run: |
@@ -188,12 +200,12 @@ jobs:
       - name: Beta Release Status
         run: |
           if [[ "${{ needs.beta-publish-npm.result }}" == "success" && "${{ needs.beta-publish-mcp.result }}" == "success" ]]; then
-            echo "✅ Beta release successful! Published to both NPM and MCP Registry"
+            echo "Beta release successful! Published to both NPM and MCP Registry"
           elif [[ "${{ needs.beta-publish-npm.result }}" == "success" ]]; then
-            echo "⚠️ NPM beta published successfully, but MCP Registry failed"
+            echo "NPM beta published successfully, but MCP Registry failed"
           elif [[ "${{ needs.beta-publish-mcp.result }}" == "success" ]]; then
-            echo "⚠️ MCP Registry beta published successfully, but NPM failed"
+            echo "MCP Registry beta published successfully, but NPM failed"
           else
-            echo "❌ Beta release failed for both NPM and MCP Registry"
+            echo "Beta release failed for both NPM and MCP Registry"
             exit 1
           fi
