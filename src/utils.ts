@@ -171,10 +171,10 @@ export class AnkiClient {
 	}
 
 	/**
-	 * Trigger a sync with AnkiWeb. Pushes local changes and pulls remote ones.
-	 * The user must already be signed in via the Anki GUI (credentials live in prefs21.db).
-	 * Returns when the sync completes server-side; the underlying AnkiConnect action
-	 * is fire-and-resolve, so a successful response means Anki accepted the request.
+	 * Trigger a sync between the local collection and AnkiWeb. Fire-and-forget:
+	 * AnkiConnect acknowledges the request but does not confirm completion.
+	 * If a blocking dialog is open in Anki, the sync stays queued until it's
+	 * dismissed.
 	 */
 	async sync(): Promise<void> {
 		try {
