@@ -36,6 +36,16 @@ export class McpToolHandler {
 					},
 				},
 				{
+					name: "sync",
+					description:
+						"Sync the local Anki collection with AnkiWeb (push local changes, pull remote ones). Requires the user to be signed into AnkiWeb via the Anki GUI.",
+					inputSchema: {
+						type: "object",
+						properties: {},
+						required: [],
+					},
+				},
+				{
 					name: "create_deck",
 					description: "Create a new Anki deck",
 					inputSchema: {
@@ -332,6 +342,10 @@ export class McpToolHandler {
 				case "create_deck":
 					return this.createDeck(a);
 
+				// Sync
+				case "sync":
+					return this.sync();
+
 				// Note type tools
 				case "list_note_types":
 					return this.listNoteTypes();
@@ -380,6 +394,26 @@ export class McpToolHandler {
 				isError: true,
 			};
 		}
+	}
+
+	/**
+	 * Trigger an AnkiWeb sync
+	 */
+	private async sync(): Promise<{
+		content: {
+			type: string;
+			text: string;
+		}[];
+	}> {
+		await this.ankiClient.sync();
+		return {
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify({ success: true, message: "Sync triggered" }, null, 2),
+				},
+			],
+		};
 	}
 
 	/**

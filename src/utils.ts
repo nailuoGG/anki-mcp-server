@@ -171,6 +171,20 @@ export class AnkiClient {
 	}
 
 	/**
+	 * Trigger a sync with AnkiWeb. Pushes local changes and pulls remote ones.
+	 * The user must already be signed in via the Anki GUI (credentials live in prefs21.db).
+	 * Returns when the sync completes server-side; the underlying AnkiConnect action
+	 * is fire-and-resolve, so a successful response means Anki accepted the request.
+	 */
+	async sync(): Promise<void> {
+		try {
+			await this.executeWithRetry(() => this.client.invoke("sync"));
+		} catch (error) {
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
+		}
+	}
+
+	/**
 	 * Get all deck names
 	 */
 	async getDeckNames(): Promise<string[]> {
