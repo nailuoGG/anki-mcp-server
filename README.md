@@ -19,6 +19,7 @@ A Model Context Protocol (MCP) server that enables LLMs to interact with Anki fl
 - `list_note_types` - List all available note types
 - `create_note_type` - Create a new note type
 - `get_note_type_info` - Get detailed structure of a note type
+- `sync` - Trigger AnkiWeb sync (fire-and-forget; success means Anki accepted the request, not that AnkiWeb received the data — a blocking dialog in Anki can silently keep the sync queued)
 
 ### Resources
 
