@@ -36,6 +36,16 @@ export class McpToolHandler {
 					},
 				},
 				{
+					name: "sync",
+					description:
+						"Trigger a sync between the local Anki collection and AnkiWeb. Fire-and-forget: success means Anki accepted the request, not that AnkiWeb received the data. If a blocking dialog is open in Anki (sync conflict, full-sync prompt, re-auth), the sync stays queued until a human dismisses it. Requires the user to be signed into AnkiWeb via the Anki GUI.",
+					inputSchema: {
+						type: "object",
+						properties: {},
+						required: [],
+					},
+				},
+				{
 					name: "create_deck",
 					description: "Create a new Anki deck",
 					inputSchema: {
@@ -332,6 +342,10 @@ export class McpToolHandler {
 				case "create_deck":
 					return this.createDeck(a);
 
+				// Sync
+				case "sync":
+					return this.sync();
+
 				// Note type tools
 				case "list_note_types":
 					return this.listNoteTypes();
@@ -380,6 +394,34 @@ export class McpToolHandler {
 				isError: true,
 			};
 		}
+	}
+
+	/**
+	 * Trigger an AnkiWeb sync. Fire-and-forget — see AnkiClient.sync().
+	 */
+	private async sync(): Promise<{
+		content: {
+			type: string;
+			text: string;
+		}[];
+	}> {
+		await this.ankiClient.sync();
+		return {
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(
+						{
+							success: true,
+							message:
+								"Sync requested. AnkiConnect does not confirm completion; if changes don't appear on AnkiWeb, check Anki for a pending dialog.",
+						},
+						null,
+						2
+					),
+				},
+			],
+		};
 	}
 
 	/**

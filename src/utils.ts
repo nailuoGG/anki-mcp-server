@@ -171,6 +171,20 @@ export class AnkiClient {
 	}
 
 	/**
+	 * Trigger a sync between the local collection and AnkiWeb. Fire-and-forget:
+	 * AnkiConnect acknowledges the request but does not confirm completion.
+	 * If a blocking dialog is open in Anki, the sync stays queued until it's
+	 * dismissed.
+	 */
+	async sync(): Promise<void> {
+		try {
+			await this.executeWithRetry(() => this.client.invoke("sync"));
+		} catch (error) {
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
+		}
+	}
+
+	/**
 	 * Get all deck names
 	 */
 	async getDeckNames(): Promise<string[]> {
