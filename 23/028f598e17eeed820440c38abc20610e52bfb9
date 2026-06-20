@@ -1,0 +1,22 @@
+src/mcpProtocol.test.ts
+  s_999832efc3652f::t_e89514a2250368 85-106,141-143,157,172
+  s_999832efc3652f::t_ac55385d7cdbee 1-84,107-140,144-156,158-171,173-178
+src/ankiMcpServer.ts
+  s_999832efc3652f::t_e9e381f75e228e 6,21-25,38,57-61,68-73,123,138-144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "23028f598e17eeed820440c38abc20610e52bfb9",
+  "prompts": {},
+  "sessions": {
+    "s_999832efc3652f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ee517-0633-7261-92d2-bc5f67d46a82",
+        "model": "gpt-5.5"
+      },
+      "human_author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
