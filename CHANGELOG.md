@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Batch deletion support in `delete_note` tool
+- `delete_note` tool now accepts either `noteId` for one note or `noteIds` for multiple notes
+- Enhanced `delete_note` response format with `deletedCount` and deleted `noteIds`
 - GitHub Actions workflow for automated npm publishing
 - GitHub Actions workflow for testing on pull requests
 - Release test workflow to ensure quality before publishing
@@ -18,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Robust version validation supporting multiple tag formats
 - npm package configuration
 - Installation instructions for npm package
+
+### Changed
+- `delete_note` tool description now reflects single-note and batch deletion support
 
 ## [0.1.0] - 2025-03-20
 

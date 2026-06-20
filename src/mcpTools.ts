@@ -250,16 +250,24 @@ export class McpToolHandler {
 				},
 				{
 					name: "delete_note",
-					description: "Delete a note",
+					description: "Delete one or multiple notes",
 					inputSchema: {
 						type: "object",
 						properties: {
 							noteId: {
 								type: "number",
-								description: "Note ID to delete",
+								description: "Single note ID to delete",
+							},
+							noteIds: {
+								type: "array",
+								items: {
+									type: "number",
+								},
+								description: "Multiple note IDs to delete",
 							},
 						},
-						required: ["noteId"],
+						required: [],
+						additionalProperties: false,
 					},
 				},
 				{
@@ -972,19 +980,32 @@ export class McpToolHandler {
 	}
 
 	/**
-	 * Delete a note
+	 * Delete one or multiple notes
 	 */
-	private async deleteNote(args: { noteId: number }): Promise<{
+	private async deleteNote(args: { noteId?: number; noteIds?: number[] }): Promise<{
 		content: {
 			type: string;
 			text: string;
 		}[];
 	}> {
-		if (!args.noteId) {
-			throw new McpError(ErrorCode.InvalidParams, "Note ID is required");
+		const hasNoteId = args.noteId !== undefined;
+		const hasNoteIds = args.noteIds !== undefined;
+
+		if (hasNoteId === hasNoteIds) {
+			throw new McpError(ErrorCode.InvalidParams, "Provide exactly one of noteId or noteIds");
 		}
 
-		await this.ankiClient.deleteNotes([args.noteId]);
+		const noteIds: number[] = hasNoteId ? [args.noteId as number] : (args.noteIds ?? []);
+
+		if (noteIds.length === 0) {
+			throw new McpError(ErrorCode.InvalidParams, "At least one note ID is required");
+		}
+
+		if (noteIds.some((id) => !Number.isInteger(id) || id <= 0)) {
+			throw new McpError(ErrorCode.InvalidParams, "All note IDs must be positive integers");
+		}
+
+		await this.ankiClient.deleteNotes(noteIds);
 
 		return {
 			content: [
@@ -993,7 +1014,8 @@ export class McpToolHandler {
 					text: JSON.stringify(
 						{
 							success: true,
-							noteId: args.noteId,
+							deletedCount: noteIds.length,
+							noteIds,
 						},
 						null,
 						2
