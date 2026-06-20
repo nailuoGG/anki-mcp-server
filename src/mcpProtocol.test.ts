@@ -29,7 +29,11 @@ const createMockClient = (overrides: Partial<Record<keyof AnkiClient, unknown>> 
 		sync: jest.fn<() => Promise<void>>().mockResolvedValue(),
 		checkConnection: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
 		getDeckNames: jest.fn<() => Promise<string[]>>().mockResolvedValue(["Default"]),
+		getDeckNamesAndIds: jest
+			.fn<() => Promise<Record<string, number>>>()
+			.mockResolvedValue({ Default: 1 }),
 		createDeck: jest.fn<(name: string) => Promise<number>>().mockResolvedValue(42),
+		getTags: jest.fn<() => Promise<string[]>>().mockResolvedValue(["protocol"]),
 		getModelNames: jest.fn<() => Promise<string[]>>().mockResolvedValue(["Basic", "Cloze"]),
 		getModelFieldNames: jest
 			.fn<(modelName: string) => Promise<string[]>>()
@@ -51,6 +55,8 @@ const createMockClient = (overrides: Partial<Record<keyof AnkiClient, unknown>> 
 		notesInfo: jest.fn<AnkiClient["notesInfo"]>().mockResolvedValue([sampleNote]),
 		updateNoteFields: jest.fn<AnkiClient["updateNoteFields"]>().mockResolvedValue(),
 		updateNoteTags: jest.fn<AnkiClient["updateNoteTags"]>().mockResolvedValue(),
+		addTags: jest.fn<AnkiClient["addTags"]>().mockResolvedValue(),
+		removeTags: jest.fn<AnkiClient["removeTags"]>().mockResolvedValue(),
 		deleteNotes: jest.fn<(ids: number[]) => Promise<void>>().mockResolvedValue(),
 		...overrides,
 	}) as unknown as AnkiClient;
@@ -171,8 +177,27 @@ describe("MCP protocol integration", () => {
 		);
 		expect(JSON.parse(firstResourceText(resource.contents))).toEqual({
 			decks: ["Default"],
+			deckIds: { Default: 1 },
 			count: 1,
 		});
 		expect(ankiClient.checkConnection).toHaveBeenCalled();
+	});
+
+	it("reads tag resources through the MCP resource protocol", async () => {
+		const { client } = await createHarness();
+
+		const listed = await client.listResources();
+		const resource = await client.readResource({ uri: "anki://tags/all" });
+
+		expect(listed.resources).toContainEqual(
+			expect.objectContaining({
+				uri: "anki://tags/all",
+				mimeType: "application/json",
+			})
+		);
+		expect(JSON.parse(firstResourceText(resource.contents))).toEqual({
+			tags: ["protocol"],
+			count: 1,
+		});
 	});
 });

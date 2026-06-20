@@ -102,12 +102,23 @@ export const TOOLS: Tool[] = [
 	{
 		name: "anki_list_decks",
 		title: "List Anki Decks",
-		description: "List all available Anki decks.",
-		inputSchema: noInput,
+		description: "List all available Anki decks, optionally with deck IDs.",
+		inputSchema: inputSchema({
+			type: "object",
+			properties: {
+				includeIds: {
+					type: "boolean",
+					default: false,
+					description: "Include a deckIds object keyed by deck name when true.",
+				},
+			},
+			additionalProperties: false,
+		}),
 		outputSchema: outputSchema({
 			type: "object",
 			properties: {
 				decks: { type: "array", items: { type: "string" } },
+				deckIds: { type: "object", additionalProperties: { type: "number" } },
 				count: { type: "number" },
 			},
 			required: ["decks", "count"],
@@ -161,6 +172,110 @@ export const TOOLS: Tool[] = [
 		annotations: {
 			readOnlyHint: false,
 			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: false,
+		},
+	},
+	{
+		name: "anki_list_tags",
+		title: "List Anki Tags",
+		description: "List all tags currently used in the Anki collection.",
+		inputSchema: noInput,
+		outputSchema: outputSchema({
+			type: "object",
+			properties: {
+				tags: { type: "array", items: { type: "string" } },
+				count: { type: "number" },
+			},
+			required: ["tags", "count"],
+		}),
+		annotations: {
+			readOnlyHint: true,
+			openWorldHint: false,
+		},
+	},
+	{
+		name: "anki_add_note_tags",
+		title: "Add Tags To Anki Notes",
+		description: "Add one or more tags to a single note or multiple notes.",
+		inputSchema: inputSchema({
+			type: "object",
+			properties: {
+				noteId: { type: "number", minimum: 1, description: "Single note ID to update." },
+				noteIds: {
+					type: "array",
+					minItems: 1,
+					items: { type: "number", minimum: 1 },
+					description: "Multiple note IDs to update.",
+				},
+				tags: {
+					type: "array",
+					minItems: 1,
+					items: { type: "string", minLength: 1, pattern: "^\\S+$" },
+					description: "Tags to add. Use Anki tag names without whitespace.",
+				},
+			},
+			required: ["tags"],
+			oneOf: [{ required: ["noteId"] }, { required: ["noteIds"] }],
+			additionalProperties: false,
+		}),
+		outputSchema: outputSchema({
+			type: "object",
+			properties: {
+				success: { type: "boolean" },
+				operation: { type: "string" },
+				noteIds: { type: "array", items: { type: "number" } },
+				tags: { type: "array", items: { type: "string" } },
+				updatedCount: { type: "number" },
+			},
+			required: ["success", "operation", "noteIds", "tags", "updatedCount"],
+		}),
+		annotations: {
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: false,
+		},
+	},
+	{
+		name: "anki_remove_note_tags",
+		title: "Remove Tags From Anki Notes",
+		description: "Remove one or more tags from a single note or multiple notes.",
+		inputSchema: inputSchema({
+			type: "object",
+			properties: {
+				noteId: { type: "number", minimum: 1, description: "Single note ID to update." },
+				noteIds: {
+					type: "array",
+					minItems: 1,
+					items: { type: "number", minimum: 1 },
+					description: "Multiple note IDs to update.",
+				},
+				tags: {
+					type: "array",
+					minItems: 1,
+					items: { type: "string", minLength: 1, pattern: "^\\S+$" },
+					description: "Tags to remove. Use Anki tag names without whitespace.",
+				},
+			},
+			required: ["tags"],
+			oneOf: [{ required: ["noteId"] }, { required: ["noteIds"] }],
+			additionalProperties: false,
+		}),
+		outputSchema: outputSchema({
+			type: "object",
+			properties: {
+				success: { type: "boolean" },
+				operation: { type: "string" },
+				noteIds: { type: "array", items: { type: "number" } },
+				tags: { type: "array", items: { type: "string" } },
+				updatedCount: { type: "number" },
+			},
+			required: ["success", "operation", "noteIds", "tags", "updatedCount"],
+		}),
+		annotations: {
+			readOnlyHint: false,
+			destructiveHint: true,
 			idempotentHint: true,
 			openWorldHint: false,
 		},
@@ -492,6 +607,9 @@ export const LEGACY_TOOL_ALIASES: Record<string, string> = {
 	list_decks: "anki_list_decks",
 	sync: "anki_sync",
 	create_deck: "anki_create_deck",
+	list_tags: "anki_list_tags",
+	add_note_tags: "anki_add_note_tags",
+	remove_note_tags: "anki_remove_note_tags",
 	get_note_type_info: "anki_get_note_type_info",
 	create_note: "anki_create_note",
 	batch_create_notes: "anki_batch_create_notes",

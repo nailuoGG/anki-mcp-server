@@ -18,6 +18,7 @@ import {
 	searchNotes,
 	updateNote,
 } from "./mcpNoteTools.js";
+import { addNoteTags, listTags, removeNoteTags } from "./mcpTagTools.js";
 import { toolErrorResult } from "./mcpToolResponses.js";
 import { LEGACY_TOOL_ALIASES, TOOLS } from "./mcpToolSchemas.js";
 import { AnkiClient } from "./utils.js";
@@ -46,11 +47,17 @@ export class McpToolHandler {
 				case "anki_check_connection":
 					return await checkConnection(this.ankiClient);
 				case "anki_list_decks":
-					return await listDecks(this.ankiClient);
+					return await listDecks(this.ankiClient, args);
 				case "anki_sync":
 					return await sync(this.ankiClient);
 				case "anki_create_deck":
 					return await createDeck(this.ankiClient, args);
+				case "anki_list_tags":
+					return await listTags(this.ankiClient);
+				case "anki_add_note_tags":
+					return await addNoteTags(this.ankiClient, args);
+				case "anki_remove_note_tags":
+					return await removeNoteTags(this.ankiClient, args);
 				case "anki_list_note_types":
 					return await listNoteTypes(this.ankiClient);
 				case "anki_get_note_type_info":
