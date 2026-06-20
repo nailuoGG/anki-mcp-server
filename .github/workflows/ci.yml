@@ -38,6 +38,9 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      - name: Validate MCP metadata
+        run: pnpm run validate-mcp
+
       - name: Run tests
         run: pnpm test
 

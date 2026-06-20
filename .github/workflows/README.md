@@ -11,13 +11,11 @@ This directory contains the GitHub Actions workflows for the Anki MCP Server pro
 **Jobs:**
 - `test`: Multi-version testing (Node 20.x, 22.x)
   - Lint code
-  - Format check
   - Build project
-  - Run tests
   - Validate MCP schema
+  - Run tests
   - Check package validity
 - `build-check`: Build verification
-  - Test MCP Inspector
   - Upload build artifacts
 
 ### 2. Release Workflow (`release.yml`)

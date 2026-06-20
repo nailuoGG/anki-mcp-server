@@ -39,6 +39,9 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      - name: Validate MCP metadata
+        run: pnpm run validate-mcp
+
       - name: Run tests
         run: pnpm test
 
@@ -160,23 +163,7 @@ jobs:
         run: pnpm run build
 
       - name: Validate server.json schema
-        run: |
-          curl -o server.schema.json https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json
-          node -e "
-            import { readFileSync } from 'fs';
-            import Ajv from 'ajv';
-            const ajv = new Ajv({allErrors: true, verbose: true});
-            const schema = JSON.parse(readFileSync('server.schema.json', 'utf8'));
-            const data = JSON.parse(readFileSync('server.json', 'utf8'));
-            const validate = ajv.compile(schema);
-            const valid = validate(data);
-            if (!valid) {
-              console.log('Validation errors:', validate.errors);
-              process.exit(1);
-            } else {
-              console.log('server.json is valid!');
-            }
-          " --input-type=module
+        run: pnpm run validate-mcp
 
       - name: Install MCP Publisher
         run: |
