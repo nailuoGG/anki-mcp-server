@@ -1,7 +1,7 @@
 /**
  * Utility functions and anti-corruption layer for yanki-connect
  */
-import { YankiConnect } from "yanki-connect";
+import { YankiConnect, type YankiFetchAdapter } from "yanki-connect";
 import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 
 /**
@@ -40,6 +40,7 @@ export interface AnkiConfig {
 	timeout: number;
 	retryTimeout: number;
 	defaultDeck: string;
+	fetchAdapter?: YankiFetchAdapter;
 }
 
 /**
@@ -51,6 +52,15 @@ export const DEFAULT_CONFIG: AnkiConfig = {
 	timeout: 5000,
 	retryTimeout: 10000,
 	defaultDeck: "Default",
+};
+
+const normalizeNoteId = (noteId: number | string | null): number | null => {
+	if (noteId === null) {
+		return null;
+	}
+
+	const numericId = typeof noteId === "number" ? noteId : Number(noteId);
+	return Number.isFinite(numericId) ? numericId : null;
 };
 
 /**
@@ -74,7 +84,38 @@ export class AnkiClient {
 		this.client = new YankiConnect({
 			host: `${url.protocol}//${url.hostname}`,
 			port: parseInt(url.port, 10),
+			fetchAdapter: this.createTimeoutFetchAdapter(),
 		});
+	}
+
+	private createTimeoutFetchAdapter(): YankiFetchAdapter {
+		const fetchAdapter = this.config.fetchAdapter ?? (fetch.bind(globalThis) as YankiFetchAdapter);
+
+		return async (input, init) => {
+			if (this.config.timeout <= 0) {
+				return fetchAdapter(input, init);
+			}
+
+			const controller = new AbortController();
+			const timeout = setTimeout(() => controller.abort(), this.config.timeout);
+
+			try {
+				return await fetchAdapter(input, {
+					...init,
+					signal: controller.signal,
+				} as Parameters<YankiFetchAdapter>[1] & { signal: AbortSignal });
+			} catch (error) {
+				if (error instanceof Error && error.name === "AbortError") {
+					throw new AnkiTimeoutError(
+						"Connection to Anki timed out. Please check if Anki is responsive."
+					);
+				}
+
+				throw error;
+			} finally {
+				clearTimeout(timeout);
+			}
+		};
 	}
 
 	/**
@@ -115,6 +156,10 @@ export class AnkiClient {
 	 */
 	private normalizeError(error: unknown): Error {
 		if (error instanceof Error) {
+			if (error instanceof AnkiTimeoutError) {
+				return error;
+			}
+
 			// Connection errors
 			if (error.message.includes("ECONNREFUSED")) {
 				return new AnkiConnectionError(
@@ -123,7 +168,11 @@ export class AnkiClient {
 			}
 
 			// Timeout errors
-			if (error.message.includes("timeout") || error.message.includes("ETIMEDOUT")) {
+			if (
+				error.name === "AbortError" ||
+				error.message.includes("timeout") ||
+				error.message.includes("ETIMEDOUT")
+			) {
 				return new AnkiTimeoutError(
 					"Connection to Anki timed out. Please check if Anki is responsive."
 				);
@@ -210,6 +259,17 @@ export class AnkiClient {
 	}
 
 	/**
+	 * Get all deck names with their Anki IDs
+	 */
+	async getDeckNamesAndIds(): Promise<Record<string, number>> {
+		try {
+			return await this.executeWithRetry(() => this.client.deck.deckNamesAndIds());
+		} catch (error) {
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
+		}
+	}
+
+	/**
 	 * Create a new deck
 	 */
 	async createDeck(name: string): Promise<number> {
@@ -269,6 +329,17 @@ export class AnkiClient {
 	}
 
 	/**
+	 * Get all tags in the collection
+	 */
+	async getTags(): Promise<string[]> {
+		try {
+			return await this.executeWithRetry(() => this.client.note.getTags());
+		} catch (error) {
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
+		}
+	}
+
+	/**
 	 * Create a new note
 	 */
 	async addNote(params: {
@@ -309,10 +380,13 @@ export class AnkiClient {
 			modelName: string;
 			fields: Record<string, string>;
 			tags?: string[];
+			options?: {
+				allowDuplicate?: boolean;
+			};
 		}[]
-	): Promise<(string | null)[] | null> {
+	): Promise<(number | null)[] | null> {
 		try {
-			return await this.executeOnce(() =>
+			const result = await this.executeOnce(() =>
 				this.client.note.addNotes({
 					notes: notes.map((note) => ({
 						deckName: note.deckName,
@@ -320,12 +394,14 @@ export class AnkiClient {
 						fields: note.fields,
 						tags: note.tags || [],
 						options: {
-							allowDuplicate: false,
+							allowDuplicate: note.options?.allowDuplicate || false,
 							duplicateScope: "deck",
 						},
 					})),
 				})
 			);
+
+			return result === null ? null : result.map((noteId) => normalizeNoteId(noteId));
 		} catch (error) {
 			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
@@ -436,6 +512,32 @@ export class AnkiClient {
 				this.client.note.updateNoteTags({
 					note: params.id,
 					tags: params.tags,
+				})
+			);
+		} catch (error) {
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
+		}
+	}
+
+	async addTags(params: { noteIds: number[]; tags: string[] }): Promise<void> {
+		try {
+			await this.executeOnce(() =>
+				this.client.note.addTags({
+					notes: params.noteIds,
+					tags: params.tags.join(" "),
+				})
+			);
+		} catch (error) {
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
+		}
+	}
+
+	async removeTags(params: { noteIds: number[]; tags: string[] }): Promise<void> {
+		try {
+			await this.executeOnce(() =>
+				this.client.note.removeTags({
+					notes: params.noteIds,
+					tags: params.tags.join(" "),
 				})
 			);
 		} catch (error) {

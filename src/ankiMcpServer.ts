@@ -3,6 +3,7 @@
  */
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import {
 	CallToolRequestSchema,
 	ErrorCode,
@@ -17,6 +18,11 @@ import { McpToolHandler } from "./mcpTools.js";
 import { AnkiClient } from "./utils.js";
 import { MCP_VERSION } from "./_version.js";
 
+type AnkiMcpServerOptions = {
+	ankiClient?: AnkiClient;
+	registerSignalHandlers?: boolean;
+};
+
 /**
  * AnkiMcpServer is the main server class that handles MCP protocol communication
  */
@@ -29,7 +35,7 @@ export class AnkiMcpServer {
 	/**
 	 * Constructor
 	 */
-	constructor(port = 8765, host = "localhost") {
+	constructor(port = 8765, host = "localhost", options: AnkiMcpServerOptions = {}) {
 		this.server = new Server(
 			{
 				name: "anki-connect-server",
@@ -48,19 +54,23 @@ export class AnkiMcpServer {
 			}
 		);
 
-		this.ankiClient = new AnkiClient({
-			ankiConnectUrl: `http://${host}:${port}`,
-		});
+		this.ankiClient =
+			options.ankiClient ??
+			new AnkiClient({
+				ankiConnectUrl: `http://${host}:${port}`,
+			});
 		this.resourceHandler = new McpResourceHandler(this.ankiClient);
 		this.toolHandler = new McpToolHandler(this.ankiClient, () => this.resourceHandler.clearCache());
 
 		this.setupHandlers();
 
 		this.server.onerror = (error) => console.error("[MCP Error]", error);
-		process.on("SIGINT", async () => {
-			await this.server.close();
-			process.exit(0);
-		});
+		if (options.registerSignalHandlers ?? true) {
+			process.on("SIGINT", async () => {
+				await this.server.close();
+				process.exit(0);
+			});
+		}
 	}
 
 	/**
@@ -110,7 +120,7 @@ export class AnkiMcpServer {
 	 */
 	async run() {
 		const transport = new StdioServerTransport();
-		await this.server.connect(transport);
+		await this.connect(transport);
 		console.error("Anki MCP server running on stdio");
 
 		// Send notifications to inform client about available tools and resources
@@ -124,5 +134,13 @@ export class AnkiMcpServer {
 		} catch (error) {
 			console.error("Failed to send resources list changed notification:", error);
 		}
+	}
+
+	async connect(transport: Transport): Promise<void> {
+		await this.server.connect(transport);
+	}
+
+	async close(): Promise<void> {
+		await this.server.close();
 	}
 }

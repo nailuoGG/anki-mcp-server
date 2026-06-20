@@ -18,47 +18,67 @@
 	},
 	"tools": [
 		{
-			"name": "list_decks",
+			"name": "anki_check_connection",
+			"description": "Check whether AnkiConnect is reachable"
+		},
+		{
+			"name": "anki_list_decks",
 			"description": "List all available Anki decks"
 		},
 		{
-			"name": "create_deck",
+			"name": "anki_sync",
+			"description": "Request AnkiWeb sync"
+		},
+		{
+			"name": "anki_create_deck",
 			"description": "Create a new Anki deck"
 		},
 		{
-			"name": "create_note",
-			"description": "Create a new note (Basic or Cloze)"
+			"name": "anki_list_tags",
+			"description": "List all tags currently used in Anki"
 		},
 		{
-			"name": "batch_create_notes",
+			"name": "anki_add_note_tags",
+			"description": "Add tags to one or more notes"
+		},
+		{
+			"name": "anki_remove_note_tags",
+			"description": "Remove tags from one or more notes"
+		},
+		{
+			"name": "anki_create_note",
+			"description": "Create a new note"
+		},
+		{
+			"name": "anki_batch_create_notes",
 			"description": "Create multiple notes at once"
 		},
 		{
-			"name": "search_notes",
+			"name": "anki_search_notes",
 			"description": "Search for notes using Anki query syntax"
 		},
 		{
-			"name": "get_note_info",
+			"name": "anki_get_note_info",
 			"description": "Get detailed information about a note"
 		},
 		{
-			"name": "update_note",
-			"description": "Update an existing note"
+			"name": "anki_update_note",
+			"description": "Update an existing note's fields and/or tags"
 		},
 		{
-			"name": "delete_note",
-			"description": "Delete a note"
+			"name": "anki_delete_note",
+			"description": "Delete one or multiple notes"
 		},
 		{
-			"name": "list_note_types",
+			"name": "anki_list_note_types",
 			"description": "List all available note types"
 		},
 		{
-			"name": "create_note_type",
+			"name": "anki_create_note_type",
 			"description": "Create a new note type"
 		},
 		{
-			"name": "get_note_type_info",
+			"name": "anki_get_note_type_info",
 			"description": "Get detailed structure of a note type"
 		}
 	],

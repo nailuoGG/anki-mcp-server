@@ -28,7 +28,11 @@ const createMockClient = (overrides: Partial<Record<keyof AnkiClient, unknown>> 
 		sync: jest.fn<() => Promise<void>>().mockResolvedValue(),
 		checkConnection: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
 		getDeckNames: jest.fn<() => Promise<string[]>>().mockResolvedValue(["Default"]),
+		getDeckNamesAndIds: jest
+			.fn<() => Promise<Record<string, number>>>()
+			.mockResolvedValue({ Default: 1 }),
 		createDeck: jest.fn<(name: string) => Promise<number>>().mockResolvedValue(42),
+		getTags: jest.fn<() => Promise<string[]>>().mockResolvedValue(["programming"]),
 		getModelNames: jest.fn<() => Promise<string[]>>().mockResolvedValue(["Basic", "Cloze"]),
 		getModelFieldNames: jest
 			.fn<(modelName: string) => Promise<string[]>>()
@@ -43,6 +47,7 @@ const createMockClient = (overrides: Partial<Record<keyof AnkiClient, unknown>> 
 		}),
 		createModel: jest.fn<AnkiClient["createModel"]>().mockResolvedValue(),
 		addNote: jest.fn<AnkiClient["addNote"]>().mockResolvedValue(777),
+		addNotes: jest.fn<AnkiClient["addNotes"]>().mockResolvedValue([777]),
 		canAddNotesWithErrorDetail: jest
 			.fn<AnkiClient["canAddNotesWithErrorDetail"]>()
 			.mockResolvedValue([{ canAdd: true }]),
@@ -50,6 +55,8 @@ const createMockClient = (overrides: Partial<Record<keyof AnkiClient, unknown>> 
 		notesInfo: jest.fn<AnkiClient["notesInfo"]>().mockResolvedValue([sampleNote]),
 		updateNoteFields: jest.fn<AnkiClient["updateNoteFields"]>().mockResolvedValue(),
 		updateNoteTags: jest.fn<AnkiClient["updateNoteTags"]>().mockResolvedValue(),
+		addTags: jest.fn<AnkiClient["addTags"]>().mockResolvedValue(),
+		removeTags: jest.fn<AnkiClient["removeTags"]>().mockResolvedValue(),
 		deleteNotes: jest.fn<(ids: number[]) => Promise<void>>().mockResolvedValue(),
 		...overrides,
 	}) as unknown as AnkiClient;
@@ -63,6 +70,7 @@ describe("McpToolHandler schema", () => {
 		expect(names).toContain("anki_create_note");
 		expect(names).toContain("anki_batch_create_notes");
 		expect(names).toContain("anki_check_connection");
+		expect(names).toContain("anki_list_tags");
 		expect(names).not.toContain("create_note");
 
 		const createNote = schema.tools.find((tool) => tool.name === "anki_create_note");
@@ -79,6 +87,16 @@ describe("McpToolHandler schema", () => {
 			additionalProperties: false,
 		});
 		expect(listDecks?.annotations).toMatchObject({ readOnlyHint: true });
+
+		const addTags = schema.tools.find((tool) => tool.name === "anki_add_note_tags");
+		expect(addTags?.inputSchema).toMatchObject({
+			oneOf: [{ required: ["noteId"] }, { required: ["noteIds"] }],
+		});
+		expect(addTags?.annotations).toMatchObject({
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: true,
+		});
 	});
 
 	it("keeps legacy tool names callable without advertising them", async () => {
@@ -106,6 +124,18 @@ describe("McpToolHandler schema", () => {
 		expect(result.content[0]).toMatchObject({
 			type: "text",
 			text: "Error: Anki is off",
+		});
+	});
+
+	it("lists decks with optional ID metadata", async () => {
+		const handler = new McpToolHandler(createMockClient());
+
+		const result = await handler.executeTool("anki_list_decks", { includeIds: true });
+
+		expect(result.structuredContent).toEqual({
+			decks: ["Default"],
+			deckIds: { Default: 1 },
+			count: 1,
 		});
 	});
 
@@ -182,13 +212,14 @@ describe("McpToolHandler note workflows", () => {
 		const getModelFieldNames = jest
 			.fn<(modelName: string) => Promise<string[]>>()
 			.mockResolvedValue(["Front", "Back"]);
-		const addNote = jest
-			.fn<AnkiClient["addNote"]>()
-			.mockResolvedValueOnce(101)
-			.mockResolvedValueOnce(null);
+		const addNotes = jest.fn<AnkiClient["addNotes"]>().mockResolvedValue([101, null]);
+		const canAddNotesWithErrorDetail = jest
+			.fn<AnkiClient["canAddNotesWithErrorDetail"]>()
+			.mockResolvedValue([{ canAdd: true }, { canAdd: true }]);
 		const client = createMockClient({
 			getModelFieldNames,
-			addNote,
+			addNotes,
+			canAddNotesWithErrorDetail,
 			getDeckNames: jest.fn<() => Promise<string[]>>().mockResolvedValue(["Default"]),
 			getModelNames: jest.fn<() => Promise<string[]>>().mockResolvedValue(["Basic"]),
 		});
@@ -203,6 +234,7 @@ describe("McpToolHandler note workflows", () => {
 
 		expect(result.isError).toBe(true);
 		expect(getModelFieldNames).toHaveBeenCalledTimes(1);
+		expect(addNotes).toHaveBeenCalledTimes(1);
 		expect(result.structuredContent).toMatchObject({
 			total: 2,
 			successful: 1,
@@ -214,6 +246,46 @@ describe("McpToolHandler note workflows", () => {
 					index: 1,
 					error: "Anki rejected note creation without returning a note ID.",
 				},
+			],
+		});
+	});
+
+	it("preflights batch notes once and only submits creatable notes", async () => {
+		const addNotes = jest.fn<AnkiClient["addNotes"]>().mockResolvedValue([202]);
+		const canAddNotesWithErrorDetail = jest
+			.fn<AnkiClient["canAddNotesWithErrorDetail"]>()
+			.mockResolvedValue([{ canAdd: false, error: "duplicate" }, { canAdd: true }]);
+		const client = createMockClient({
+			addNotes,
+			canAddNotesWithErrorDetail,
+			getDeckNames: jest.fn<() => Promise<string[]>>().mockResolvedValue(["Default"]),
+			getModelNames: jest.fn<() => Promise<string[]>>().mockResolvedValue(["Basic"]),
+		});
+		const handler = new McpToolHandler(client);
+
+		const result = await handler.executeTool("anki_batch_create_notes", {
+			notes: [
+				{ type: "Basic", deck: "Default", fields: { Front: "Q1", Back: "A1" } },
+				{ type: "Basic", deck: "Default", fields: { Front: "Q2", Back: "A2" } },
+			],
+		});
+
+		expect(canAddNotesWithErrorDetail).toHaveBeenCalledTimes(1);
+		expect(addNotes).toHaveBeenCalledWith([
+			{
+				deckName: "Default",
+				modelName: "Basic",
+				fields: { Front: "Q2", Back: "A2" },
+				tags: [],
+				options: { allowDuplicate: false },
+			},
+		]);
+		expect(result.structuredContent).toMatchObject({
+			successful: 1,
+			failed: 1,
+			results: [
+				{ success: false, index: 0, error: "Cannot create note: duplicate" },
+				{ success: true, index: 1, noteId: 202 },
 			],
 		});
 	});
@@ -284,6 +356,63 @@ describe("McpToolHandler maintenance workflows", () => {
 			noteId: 1234567890,
 			updatedFields: true,
 			updatedTags: true,
+		});
+	});
+
+	it("lists and mutates tags for notes", async () => {
+		const client = createMockClient();
+		const handler = new McpToolHandler(client);
+
+		const listed = await handler.executeTool("list_tags", {});
+		const added = await handler.executeTool("anki_add_note_tags", {
+			noteIds: [1234567890, 9876543210],
+			tags: ["programming", "mcp"],
+		});
+		const removed = await handler.executeTool("anki_remove_note_tags", {
+			noteId: 1234567890,
+			tags: ["mcp"],
+		});
+
+		expect(listed.structuredContent).toEqual({
+			tags: ["programming"],
+			count: 1,
+		});
+		expect(client.addTags).toHaveBeenCalledWith({
+			noteIds: [1234567890, 9876543210],
+			tags: ["programming", "mcp"],
+		});
+		expect(added.structuredContent).toEqual({
+			success: true,
+			operation: "added",
+			noteIds: [1234567890, 9876543210],
+			tags: ["programming", "mcp"],
+			updatedCount: 2,
+		});
+		expect(client.removeTags).toHaveBeenCalledWith({
+			noteIds: [1234567890],
+			tags: ["mcp"],
+		});
+		expect(removed.structuredContent).toEqual({
+			success: true,
+			operation: "removed",
+			noteIds: [1234567890],
+			tags: ["mcp"],
+			updatedCount: 1,
+		});
+	});
+
+	it("rejects whitespace tags for add/remove tag operations", async () => {
+		const handler = new McpToolHandler(createMockClient());
+
+		const result = await handler.executeTool("anki_add_note_tags", {
+			noteId: 1234567890,
+			tags: ["two words"],
+		});
+
+		expect(result.isError).toBe(true);
+		expect(result.content[0]).toMatchObject({
+			type: "text",
+			text: "Error: tags must not contain whitespace for this operation: two words",
 		});
 	});
 

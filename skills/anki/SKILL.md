@@ -36,6 +36,9 @@ Create and manage Anki flashcards through the `anki-mcp-server` MCP integration.
 | Check connection | `anki_check_connection` | — |
 | List all decks | `anki_list_decks` | — |
 | Create deck | `anki_create_deck` | `name` |
+| List all tags | `anki_list_tags` | — |
+| Add note tags | `anki_add_note_tags` | `noteId` or `noteIds`, `tags` |
+| Remove note tags | `anki_remove_note_tags` | `noteId` or `noteIds`, `tags` |
 | Create one note | `anki_create_note` | `type`, `deck`, `fields` |
 | Batch create notes | `anki_batch_create_notes` | `notes[]` (10–20 per batch) |
 | Search notes | `anki_search_notes` | `query` (Anki syntax), `limit`, `offset` |
@@ -104,6 +107,10 @@ is:new                   # Unseen cards
 note:Basic               # Cards using Basic note type
 "exact phrase"           # Exact text match
 ```
+
+### Tags
+
+Use `anki_list_tags` to inspect existing tags. For metadata-only changes, prefer `anki_add_note_tags` and `anki_remove_note_tags`; use `anki_update_note` only when replacing the full tag list.
 
 ## Deck Naming
 

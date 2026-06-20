@@ -1,0 +1,42 @@
+<evaluation>
+  <qa_pair>
+    <question>In the fixture deck MCP Eval::Agent Basics, how many notes have the tag mcp-eval?</question>
+    <answer>10</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>According to the fixture, which MCP tool lists all Anki decks?</question>
+    <answer>anki_list_decks</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>According to the fixture, which two MCP tools add and remove tags from notes?</question>
+    <answer>anki_add_note_tags and anki_remove_note_tags</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Which MCP resource lists every tag in the Anki collection?</question>
+    <answer>anki://tags/all</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Which MCP resource lists decks together with deck IDs?</question>
+    <answer>anki://decks/all</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What is the maximum number of notes accepted by one anki_batch_create_notes request?</question>
+    <answer>50</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Which field names are required for the Basic note type?</question>
+    <answer>Front and Back</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What should an agent call before creating notes for a custom note type?</question>
+    <answer>anki_get_note_type_info</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What does a successful sync request guarantee?</question>
+    <answer>Only that Anki accepted the request; it does not confirm AnkiWeb completion.</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Which structured result field should agents parse instead of scraping text?</question>
+    <answer>structuredContent</answer>
+  </qa_pair>
+</evaluation>

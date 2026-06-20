@@ -1,0 +1,95 @@
+{
+	"notes": [
+		{
+			"type": "Basic",
+			"deck": "MCP Eval::Agent Basics",
+			"fields": {
+				"Front": "What MCP tool lists all Anki decks?",
+				"Back": "anki_list_decks"
+			},
+			"tags": ["mcp-eval", "protocol", "resources"]
+		},
+		{
+			"type": "Basic",
+			"deck": "MCP Eval::Agent Basics",
+			"fields": {
+				"Front": "Which MCP tool adds tags to one or more notes?",
+				"Back": "anki_add_note_tags"
+			},
+			"tags": ["mcp-eval", "tags"]
+		},
+		{
+			"type": "Basic",
+			"deck": "MCP Eval::Agent Basics",
+			"fields": {
+				"Front": "Which MCP tool removes tags from one or more notes?",
+				"Back": "anki_remove_note_tags"
+			},
+			"tags": ["mcp-eval", "tags"]
+		},
+		{
+			"type": "Basic",
+			"deck": "MCP Eval::Agent Basics",
+			"fields": {
+				"Front": "What should an agent call before creating notes for a custom note type?",
+				"Back": "anki_get_note_type_info"
+			},
+			"tags": ["mcp-eval", "agent-workflow", "note-types"]
+		},
+		{
+			"type": "Basic",
+			"deck": "MCP Eval::Agent Basics",
+			"fields": {
+				"Front": "What is the maximum number of notes accepted by one anki_batch_create_notes request?",
+				"Back": "50"
+			},
+			"tags": ["mcp-eval", "batch"]
+		},
+		{
+			"type": "Cloze",
+			"deck": "MCP Eval::Agent Basics",
+			"fields": {
+				"Text": "The Anki MCP server uses {{c1::structuredContent}} so agents can parse tool results without scraping text."
+			},
+			"tags": ["mcp-eval", "protocol"]
+		},
+		{
+			"type": "Basic",
+			"deck": "MCP Eval::Agent Basics",
+			"fields": {
+				"Front": "Which resource lists every tag in the collection?",
+				"Back": "anki://tags/all"
+			},
+			"tags": ["mcp-eval", "resources"]
+		},
+		{
+			"type": "Basic",
+			"deck": "MCP Eval::Agent Basics",
+			"fields": {
+				"Front": "Which resource lists every deck with deck IDs?",
+				"Back": "anki://decks/all"
+			},
+			"tags": ["mcp-eval", "resources"]
+		},
+		{
+			"type": "Basic",
+			"deck": "MCP Eval::Agent Basics",
+			"fields": {
+				"Front": "What does a successful sync request guarantee?",
+				"Back": "Only that Anki accepted the request; it does not confirm AnkiWeb completion."
+			},
+			"tags": ["mcp-eval", "sync"]
+		},
+		{
+			"type": "Basic",
+			"deck": "MCP Eval::Agent Basics",
+			"fields": {
+				"Front": "Which field names are required for the Basic note type?",
+				"Back": "Front and Back"
+			},
+			"tags": ["mcp-eval", "note-types"]
+		}
+	],
+	"allowDuplicate": false,
+	"stopOnError": false
+}
