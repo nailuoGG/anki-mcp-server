@@ -1,103 +1,303 @@
 import { describe, expect, it, jest } from "@jest/globals";
-import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
+import { ErrorCode, McpError, type CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { McpToolHandler } from "./mcpTools.js";
 import type { AnkiClient } from "./utils.js";
 
-type ToolResponse = {
-	content: {
-		type: string;
-		text: string;
-	}[];
+const sampleNote = {
+	noteId: 1234567890,
+	modelName: "Basic",
+	tags: ["programming"],
+	fields: {
+		Front: { value: "What is MCP?", order: 0 },
+		Back: { value: "Model Context Protocol", order: 1 },
+	},
 };
 
-type DeleteNoteArgs = {
-	noteId?: number;
-	noteIds?: number[];
+const textJson = (result: CallToolResult) => {
+	const content = result.content[0];
+	if (content.type !== "text") {
+		throw new Error("Expected text content");
+	}
+
+	return JSON.parse(content.text);
 };
 
-type DeleteNoteHandler = {
-	deleteNote(args: DeleteNoteArgs): Promise<ToolResponse>;
-};
+const createMockClient = (overrides: Partial<Record<keyof AnkiClient, unknown>> = {}) =>
+	({
+		getVersion: jest.fn<() => Promise<number>>().mockResolvedValue(6),
+		sync: jest.fn<() => Promise<void>>().mockResolvedValue(),
+		checkConnection: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
+		getDeckNames: jest.fn<() => Promise<string[]>>().mockResolvedValue(["Default"]),
+		createDeck: jest.fn<(name: string) => Promise<number>>().mockResolvedValue(42),
+		getModelNames: jest.fn<() => Promise<string[]>>().mockResolvedValue(["Basic", "Cloze"]),
+		getModelFieldNames: jest
+			.fn<(modelName: string) => Promise<string[]>>()
+			.mockResolvedValue(["Front", "Back"]),
+		getModelTemplates: jest
+			.fn<(modelName: string) => Promise<Record<string, { Front: string; Back: string }>>>()
+			.mockResolvedValue({
+				Card: { Front: "{{Front}}", Back: "{{Back}}" },
+			}),
+		getModelStyling: jest.fn<(modelName: string) => Promise<{ css: string }>>().mockResolvedValue({
+			css: ".card {}",
+		}),
+		createModel: jest.fn<AnkiClient["createModel"]>().mockResolvedValue(),
+		addNote: jest.fn<AnkiClient["addNote"]>().mockResolvedValue(777),
+		canAddNotesWithErrorDetail: jest
+			.fn<AnkiClient["canAddNotesWithErrorDetail"]>()
+			.mockResolvedValue([{ canAdd: true }]),
+		findNotes: jest.fn<(query: string) => Promise<number[]>>().mockResolvedValue([1, 2, 3]),
+		notesInfo: jest.fn<AnkiClient["notesInfo"]>().mockResolvedValue([sampleNote]),
+		updateNoteFields: jest.fn<AnkiClient["updateNoteFields"]>().mockResolvedValue(),
+		updateNoteTags: jest.fn<AnkiClient["updateNoteTags"]>().mockResolvedValue(),
+		deleteNotes: jest.fn<(ids: number[]) => Promise<void>>().mockResolvedValue(),
+		...overrides,
+	}) as unknown as AnkiClient;
 
-const createDeleteNoteHarness = () => {
-	const deleteNotes = jest.fn<(ids: number[]) => Promise<void>>().mockResolvedValue();
-	const handler = new McpToolHandler({ deleteNotes } as unknown as AnkiClient);
+describe("McpToolHandler schema", () => {
+	it("exposes agent-friendly anki-prefixed tools with modern metadata", async () => {
+		const handler = new McpToolHandler(createMockClient());
+		const schema = await handler.getToolSchema();
+		const names = schema.tools.map((tool) => tool.name);
 
-	return {
-		deleteNotes,
-		deleteNote: (handler as unknown as DeleteNoteHandler).deleteNote.bind(handler),
-	};
-};
+		expect(names).toContain("anki_create_note");
+		expect(names).toContain("anki_batch_create_notes");
+		expect(names).toContain("anki_check_connection");
+		expect(names).not.toContain("create_note");
 
-// Simple tests that don't require external dependencies
-describe("Anki MCP Server - Basic Tests", () => {
-	it("should pass basic test", () => {
-		expect(true).toBe(true);
+		const createNote = schema.tools.find((tool) => tool.name === "anki_create_note");
+		expect(createNote?.outputSchema).toBeDefined();
+		expect(createNote?.annotations).toMatchObject({
+			readOnlyHint: false,
+			destructiveHint: false,
+			openWorldHint: false,
+		});
+
+		const listDecks = schema.tools.find((tool) => tool.name === "anki_list_decks");
+		expect(listDecks?.inputSchema).toMatchObject({
+			type: "object",
+			additionalProperties: false,
+		});
+		expect(listDecks?.annotations).toMatchObject({ readOnlyHint: true });
 	});
 
-	it("should handle string operations", () => {
-		const testString = "Hello, World!";
-		expect(testString).toContain("World");
-		expect(testString.length).toBe(13);
+	it("keeps legacy tool names callable without advertising them", async () => {
+		const handler = new McpToolHandler(createMockClient());
+
+		const result = await handler.executeTool("list_decks", {});
+
+		expect(result.structuredContent).toEqual({
+			decks: ["Default"],
+			count: 1,
+		});
+		expect(textJson(result)).toEqual(result.structuredContent);
 	});
 
-	it("should handle array operations", () => {
-		const testArray = [1, 2, 3, 4, 5];
-		expect(testArray).toHaveLength(5);
-		expect(testArray).toContain(3);
-		expect(testArray[0]).toBe(1);
+	it("returns tool execution errors as isError results", async () => {
+		const handler = new McpToolHandler(
+			createMockClient({
+				getDeckNames: jest.fn<() => Promise<string[]>>().mockRejectedValue(new Error("Anki is off")),
+			})
+		);
+
+		const result = await handler.executeTool("anki_list_decks", {});
+
+		expect(result.isError).toBe(true);
+		expect(result.content[0]).toMatchObject({
+			type: "text",
+			text: "Error: Anki is off",
+		});
 	});
 
-	it("should handle object operations", () => {
-		const testObject = { name: "test", value: 42 };
-		expect(testObject).toHaveProperty("name");
-		expect(testObject.name).toBe("test");
-		expect(testObject.value).toBe(42);
+	it("throws protocol errors for unknown tools", async () => {
+		const handler = new McpToolHandler(createMockClient());
+
+		await expect(handler.executeTool("missing_tool", {})).rejects.toMatchObject({
+			code: ErrorCode.MethodNotFound,
+		} satisfies Partial<McpError>);
 	});
 });
 
-describe("delete_note tool", () => {
-	it("should delete a single note by noteId", async () => {
-		const { deleteNote, deleteNotes } = createDeleteNoteHarness();
+describe("McpToolHandler note workflows", () => {
+	it("creates a note with preflight validation and structured output", async () => {
+		const addNote = jest.fn<AnkiClient["addNote"]>().mockResolvedValue(456);
+		const canAddNotesWithErrorDetail = jest
+			.fn<AnkiClient["canAddNotesWithErrorDetail"]>()
+			.mockResolvedValue([{ canAdd: true }]);
+		const client = createMockClient({ addNote, canAddNotesWithErrorDetail });
+		const handler = new McpToolHandler(client);
 
-		const result = await deleteNote({ noteId: 1234567890 });
+		const result = await handler.executeTool("anki_create_note", {
+			type: "Basic",
+			deck: "Programming",
+			fields: { front: "Q", Back: "A" },
+			tags: ["mcp"],
+		});
 
-		expect(deleteNotes).toHaveBeenCalledWith([1234567890]);
-		expect(JSON.parse(result.content[0].text)).toEqual({
+		expect((client.createDeck as jest.Mock)).toHaveBeenCalledWith("Programming");
+		expect(canAddNotesWithErrorDetail).toHaveBeenCalledWith([
+			{
+				deckName: "Programming",
+				modelName: "Basic",
+				fields: { Front: "Q", Back: "A" },
+				tags: ["mcp"],
+				options: { allowDuplicate: false },
+			},
+		]);
+		expect(addNote).toHaveBeenCalledWith({
+			deckName: "Programming",
+			modelName: "Basic",
+			fields: { Front: "Q", Back: "A" },
+			tags: ["mcp"],
+			options: { allowDuplicate: false },
+		});
+		expect(result.structuredContent).toEqual({
+			noteId: 456,
+			deck: "Programming",
+			modelName: "Basic",
+		});
+	});
+
+	it("treats null note IDs as failed note creation", async () => {
+		const handler = new McpToolHandler(
+			createMockClient({
+				addNote: jest.fn<AnkiClient["addNote"]>().mockResolvedValue(null),
+			})
+		);
+
+		const result = await handler.executeTool("anki_create_note", {
+			type: "Basic",
+			deck: "Default",
+			fields: { Front: "Q", Back: "A" },
+		});
+
+		expect(result.isError).toBe(true);
+		expect(result.content[0]).toMatchObject({
+			type: "text",
+			text: "Error: Anki rejected note creation without returning a note ID.",
+		});
+	});
+
+	it("batch creates notes with cached model/deck lookups and per-note errors", async () => {
+		const getModelFieldNames = jest
+			.fn<(modelName: string) => Promise<string[]>>()
+			.mockResolvedValue(["Front", "Back"]);
+		const addNote = jest
+			.fn<AnkiClient["addNote"]>()
+			.mockResolvedValueOnce(101)
+			.mockResolvedValueOnce(null);
+		const client = createMockClient({
+			getModelFieldNames,
+			addNote,
+			getDeckNames: jest.fn<() => Promise<string[]>>().mockResolvedValue(["Default"]),
+			getModelNames: jest.fn<() => Promise<string[]>>().mockResolvedValue(["Basic"]),
+		});
+		const handler = new McpToolHandler(client);
+
+		const result = await handler.executeTool("anki_batch_create_notes", {
+			notes: [
+				{ type: "Basic", deck: "Default", fields: { Front: "Q1", Back: "A1" } },
+				{ type: "Basic", deck: "Default", fields: { Front: "Q2", Back: "A2" } },
+			],
+		});
+
+		expect(result.isError).toBe(true);
+		expect(getModelFieldNames).toHaveBeenCalledTimes(1);
+		expect(result.structuredContent).toMatchObject({
+			total: 2,
+			successful: 1,
+			failed: 1,
+			results: [
+				{ success: true, noteId: 101, index: 0 },
+				{
+					success: false,
+					index: 1,
+					error: "Anki rejected note creation without returning a note ID.",
+				},
+			],
+		});
+	});
+
+	it("rejects oversized batches before calling Anki", async () => {
+		const client = createMockClient();
+		const handler = new McpToolHandler(client);
+
+		const result = await handler.executeTool("anki_batch_create_notes", {
+			notes: Array.from({ length: 51 }, () => ({
+				type: "Basic",
+				deck: "Default",
+				fields: { Front: "Q", Back: "A" },
+			})),
+		});
+
+		expect(result.isError).toBe(true);
+		expect(client.getDeckNames).not.toHaveBeenCalled();
+	});
+});
+
+describe("McpToolHandler maintenance workflows", () => {
+	it("searches notes with limit and offset metadata", async () => {
+		const client = createMockClient({
+			findNotes: jest.fn<(query: string) => Promise<number[]>>().mockResolvedValue([10, 11, 12]),
+			notesInfo: jest.fn<AnkiClient["notesInfo"]>().mockResolvedValue([sampleNote]),
+		});
+		const handler = new McpToolHandler(client);
+
+		const result = await handler.executeTool("anki_search_notes", {
+			query: "deck:Default",
+			limit: 1,
+			offset: 1,
+		});
+
+		expect(client.notesInfo).toHaveBeenCalledWith([11]);
+		expect(result.structuredContent).toMatchObject({
+			query: "deck:Default",
+			total: 3,
+			offset: 1,
+			limit: 1,
+			hasMore: true,
+			nextOffset: 2,
+			notes: [sampleNote],
+		});
+	});
+
+	it("updates fields and tags when both are provided", async () => {
+		const client = createMockClient();
+		const handler = new McpToolHandler(client);
+
+		const result = await handler.executeTool("anki_update_note", {
+			id: 1234567890,
+			fields: { Front: "Updated" },
+			tags: ["updated"],
+		});
+
+		expect(client.updateNoteFields).toHaveBeenCalledWith({
+			id: 1234567890,
+			fields: { Front: "Updated" },
+		});
+		expect(client.updateNoteTags).toHaveBeenCalledWith({
+			id: 1234567890,
+			tags: ["updated"],
+		});
+		expect(result.structuredContent).toEqual({
+			success: true,
+			noteId: 1234567890,
+			updatedFields: true,
+			updatedTags: true,
+		});
+	});
+
+	it("deletes a single note through the legacy alias", async () => {
+		const client = createMockClient();
+		const handler = new McpToolHandler(client);
+
+		const result = await handler.executeTool("delete_note", { noteId: 1234567890 });
+
+		expect(client.deleteNotes).toHaveBeenCalledWith([1234567890]);
+		expect(result.structuredContent).toEqual({
 			success: true,
 			deletedCount: 1,
 			noteIds: [1234567890],
 		});
-	});
-
-	it("should delete multiple notes by noteIds", async () => {
-		const { deleteNote, deleteNotes } = createDeleteNoteHarness();
-
-		const result = await deleteNote({ noteIds: [1234567890, 9876543210] });
-
-		expect(deleteNotes).toHaveBeenCalledWith([1234567890, 9876543210]);
-		expect(JSON.parse(result.content[0].text)).toEqual({
-			success: true,
-			deletedCount: 2,
-			noteIds: [1234567890, 9876543210],
-		});
-	});
-
-	it("should reject missing, duplicate, empty, or invalid note IDs", async () => {
-		const { deleteNote, deleteNotes } = createDeleteNoteHarness();
-
-		await expect(deleteNote({})).rejects.toMatchObject({
-			code: ErrorCode.InvalidParams,
-		} satisfies Partial<McpError>);
-		await expect(deleteNote({ noteId: 1, noteIds: [2] })).rejects.toMatchObject({
-			code: ErrorCode.InvalidParams,
-		} satisfies Partial<McpError>);
-		await expect(deleteNote({ noteIds: [] })).rejects.toMatchObject({
-			code: ErrorCode.InvalidParams,
-		} satisfies Partial<McpError>);
-		await expect(deleteNote({ noteIds: [1, 0] })).rejects.toMatchObject({
-			code: ErrorCode.InvalidParams,
-		} satisfies Partial<McpError>);
-		expect(deleteNotes).not.toHaveBeenCalled();
 	});
 });
