@@ -1,6 +1,6 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { toolResult } from "./mcpToolResponses.js";
-import { requireString } from "./mcpToolValidation.js";
+import { optionalBoolean, requireString } from "./mcpToolValidation.js";
 import type { AnkiClient } from "./utils.js";
 
 export const checkConnection = async (ankiClient: AnkiClient): Promise<CallToolResult> => {
@@ -17,9 +17,19 @@ export const sync = async (ankiClient: AnkiClient): Promise<CallToolResult> => {
 	});
 };
 
-export const listDecks = async (ankiClient: AnkiClient): Promise<CallToolResult> => {
+export const listDecks = async (
+	ankiClient: AnkiClient,
+	args: Record<string, unknown> = {}
+): Promise<CallToolResult> => {
+	const includeIds = optionalBoolean(args.includeIds, false);
 	const decks = await ankiClient.getDeckNames();
-	return toolResult({ decks, count: decks.length });
+	const deckIds = includeIds ? await ankiClient.getDeckNamesAndIds() : undefined;
+
+	return toolResult({
+		decks,
+		count: decks.length,
+		...(deckIds ? { deckIds } : {}),
+	});
 };
 
 export const createDeck = async (

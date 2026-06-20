@@ -250,6 +250,17 @@ export class AnkiClient {
 	}
 
 	/**
+	 * Get all deck names with their Anki IDs
+	 */
+	async getDeckNamesAndIds(): Promise<Record<string, number>> {
+		try {
+			return await this.executeWithRetry(() => this.client.deck.deckNamesAndIds());
+		} catch (error) {
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
+		}
+	}
+
+	/**
 	 * Create a new deck
 	 */
 	async createDeck(name: string): Promise<number> {
@@ -303,6 +314,17 @@ export class AnkiClient {
 	async getModelStyling(modelName: string): Promise<{ css: string }> {
 		try {
 			return await this.executeWithRetry(() => this.client.model.modelStyling({ modelName }));
+		} catch (error) {
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
+		}
+	}
+
+	/**
+	 * Get all tags in the collection
+	 */
+	async getTags(): Promise<string[]> {
+		try {
+			return await this.executeWithRetry(() => this.client.note.getTags());
 		} catch (error) {
 			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
@@ -476,6 +498,32 @@ export class AnkiClient {
 				this.client.note.updateNoteTags({
 					note: params.id,
 					tags: params.tags,
+				})
+			);
+		} catch (error) {
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
+		}
+	}
+
+	async addTags(params: { noteIds: number[]; tags: string[] }): Promise<void> {
+		try {
+			await this.executeOnce(() =>
+				this.client.note.addTags({
+					notes: params.noteIds,
+					tags: params.tags.join(" "),
+				})
+			);
+		} catch (error) {
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
+		}
+	}
+
+	async removeTags(params: { noteIds: number[]; tags: string[] }): Promise<void> {
+		try {
+			await this.executeOnce(() =>
+				this.client.note.removeTags({
+					notes: params.noteIds,
+					tags: params.tags.join(" "),
 				})
 			);
 		} catch (error) {

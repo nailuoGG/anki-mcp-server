@@ -44,6 +44,14 @@ export const requirePositiveInteger = (value: unknown, fieldName: string): numbe
 	return value as number;
 };
 
+export const parseNoteIds = (value: unknown): number[] => {
+	if (!Array.isArray(value) || value.length === 0) {
+		throw new Error("noteIds must be a non-empty array");
+	}
+
+	return value.map((id, index) => requirePositiveInteger(id, `noteIds[${index}]`));
+};
+
 export const optionalInteger = (
 	value: unknown,
 	fieldName: string,

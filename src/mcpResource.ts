@@ -41,6 +41,12 @@ export class McpResourceHandler {
 					description: "List of all available decks in Anki",
 					mimeType: "application/json",
 				},
+				{
+					uri: "anki://tags/all",
+					name: "All Tags",
+					description: "List of all tags used in Anki",
+					mimeType: "application/json",
+				},
 			],
 		};
 	}
@@ -82,6 +88,12 @@ export class McpResourceHandler {
 					description: "Complete list of available decks",
 					mimeType: "application/json",
 				},
+				{
+					uriTemplate: "anki://tags/all",
+					name: "All Tags",
+					description: "Complete list of tags used in Anki",
+					mimeType: "application/json",
+				},
 			],
 		};
 	}
@@ -98,7 +110,10 @@ export class McpResourceHandler {
 	}> {
 		await this.ankiClient.checkConnection();
 		if (uri === "anki://decks/all") {
-			const decks = await this.ankiClient.getDeckNames();
+			const [decks, deckIds] = await Promise.all([
+				this.ankiClient.getDeckNames(),
+				this.ankiClient.getDeckNamesAndIds(),
+			]);
 			return {
 				contents: [
 					{
@@ -107,7 +122,28 @@ export class McpResourceHandler {
 						text: JSON.stringify(
 							{
 								decks,
+								deckIds,
 								count: decks.length,
+							},
+							null,
+							2
+						),
+					},
+				],
+			};
+		}
+
+		if (uri === "anki://tags/all") {
+			const tags = await this.ankiClient.getTags();
+			return {
+				contents: [
+					{
+						uri,
+						mimeType: "application/json",
+						text: JSON.stringify(
+							{
+								tags,
+								count: tags.length,
 							},
 							null,
 							2

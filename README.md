@@ -9,8 +9,11 @@ A Model Context Protocol (MCP) server that enables LLMs to interact with Anki fl
 ### Tools
 
 - `anki_check_connection` - Check whether AnkiConnect is reachable
-- `anki_list_decks` - List all available Anki decks
+- `anki_list_decks` - List all available Anki decks, optionally with deck IDs
 - `anki_create_deck` - Create a new Anki deck
+- `anki_list_tags` - List all tags currently used in the collection
+- `anki_add_note_tags` - Add tags to one or more notes
+- `anki_remove_note_tags` - Remove tags from one or more notes
 - `anki_create_note` - Create a new note
 - `anki_batch_create_notes` - Create multiple notes at once
 - `anki_search_notes` - Search for notes using Anki query syntax
@@ -26,7 +29,8 @@ Legacy unprefixed tool names such as `create_note` and `list_decks` remain calla
 
 ### Resources
 
-- `anki://decks/all` - Complete list of available decks
+- `anki://decks/all` - Complete list of available decks with deck IDs
+- `anki://tags/all` - Complete list of tags
 - `anki://note-types/all` - List of all available note types
 - `anki://note-types/all-with-schemas` - Detailed structure information for all note types
 - `anki://note-types/{modelName}` - Detailed structure information for a specific note type
@@ -251,6 +255,12 @@ Delete note ID 1234567890
 
 ```
 Delete note IDs 1234567890, 9876543210, and 1122334455
+```
+
+6. Add tags to notes:
+
+```
+Add tags "review" and "mcp" to note IDs 1234567890 and 9876543210
 ```
 
 ## Contributing
