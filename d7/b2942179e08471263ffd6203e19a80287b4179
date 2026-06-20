@@ -1,0 +1,19 @@
+package.json
+  s_9d8f7bceb2e77d::t_8b59eba6c8c7df 24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "d7b2942179e08471263ffd6203e19a80287b4179",
+  "prompts": {},
+  "sessions": {
+    "s_9d8f7bceb2e77d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ee4ec-0d56-7630-b14f-58ccf78d94a1",
+        "model": "gpt-5.5"
+      },
+      "human_author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
