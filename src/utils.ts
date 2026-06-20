@@ -54,6 +54,15 @@ export const DEFAULT_CONFIG: AnkiConfig = {
 	defaultDeck: "Default",
 };
 
+const normalizeNoteId = (noteId: number | string | null): number | null => {
+	if (noteId === null) {
+		return null;
+	}
+
+	const numericId = typeof noteId === "number" ? noteId : Number(noteId);
+	return Number.isFinite(numericId) ? numericId : null;
+};
+
 /**
  * Anti-corruption layer for yanki-connect
  * Provides a stable interface to interact with Anki
@@ -371,10 +380,13 @@ export class AnkiClient {
 			modelName: string;
 			fields: Record<string, string>;
 			tags?: string[];
+			options?: {
+				allowDuplicate?: boolean;
+			};
 		}[]
-	): Promise<(string | null)[] | null> {
+	): Promise<(number | null)[] | null> {
 		try {
-			return await this.executeOnce(() =>
+			const result = await this.executeOnce(() =>
 				this.client.note.addNotes({
 					notes: notes.map((note) => ({
 						deckName: note.deckName,
@@ -382,12 +394,14 @@ export class AnkiClient {
 						fields: note.fields,
 						tags: note.tags || [],
 						options: {
-							allowDuplicate: false,
+							allowDuplicate: note.options?.allowDuplicate || false,
 							duplicateScope: "deck",
 						},
 					})),
 				})
 			);
+
+			return result === null ? null : result.map((noteId) => normalizeNoteId(noteId));
 		} catch (error) {
 			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}

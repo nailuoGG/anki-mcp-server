@@ -48,6 +48,7 @@ const createMockClient = (overrides: Partial<Record<keyof AnkiClient, unknown>> 
 		}),
 		createModel: jest.fn<AnkiClient["createModel"]>().mockResolvedValue(),
 		addNote: jest.fn<AnkiClient["addNote"]>().mockResolvedValue(777),
+		addNotes: jest.fn<AnkiClient["addNotes"]>().mockResolvedValue([777]),
 		canAddNotesWithErrorDetail: jest
 			.fn<AnkiClient["canAddNotesWithErrorDetail"]>()
 			.mockResolvedValue([{ canAdd: true }]),
