@@ -1,0 +1,44 @@
+src/mcpResource.ts
+  s_999832efc3652f::t_ae147849e0bc31 44-49,91-96,113-116,125,136-146
+src/mcpTagTools.ts
+  s_999832efc3652f::t_bf2df69851113c 1-40,42-64
+  s_999832efc3652f::t_a1b6fb85bf086a 41
+src/mcpProtocol.test.ts
+  s_999832efc3652f::t_821535c38ba96f 32-34,36,58-59,180,185-201
+src/mcpToolSchemas.ts
+  s_999832efc3652f::t_a3a54f721b7e69 105-116,121,179-218,220-261,263-282,610-612
+  s_999832efc3652f::t_a382975c566d42 219,262
+src/index.test.ts
+  s_999832efc3652f::t_512f236be6d57a 31-33,35,57-58,72,89-98,129-137
+  s_999832efc3652f::t_4106c552e07ce6 319-375
+src/mcpToolValidation.ts
+  s_999832efc3652f::t_f8c52a1f93ff21 47-54
+src/mcpDeckTools.ts
+  s_999832efc3652f::t_5779d01a83819f 3,20-24,26-32
+src/utils.ts
+  s_999832efc3652f::t_639eb4df5f3023 253-262,322-332,508-526
+src/mcpTools.ts
+  s_999832efc3652f::t_8c919586c53d04 21,50,55-60
+README.md
+  s_999832efc3652f::t_d57bbf94175c83 12,14-16,32-33,260-263
+skills/anki/SKILL.md
+  s_999832efc3652f::t_c2aaed045cf89b 39-41,111-113
+manifest.json
+  s_999832efc3652f::t_13f152ca2a14cc 21-25,29-33,37-50,53,57,61,65-66,69-70,73,77,81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "91b2773d8a104ad96a44192f6ef221f8f3f62dfd",
+  "prompts": {},
+  "sessions": {
+    "s_999832efc3652f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ee517-0633-7261-92d2-bc5f67d46a82",
+        "model": "gpt-5.5"
+      },
+      "human_author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
