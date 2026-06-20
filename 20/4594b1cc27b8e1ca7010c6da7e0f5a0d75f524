@@ -1,0 +1,22 @@
+src/utils.ts
+  s_999832efc3652f::t_ccd02b37faf967 4,43,78,82-111,150-153,162-166
+src/utils.test.ts
+  s_999832efc3652f::t_5cba1e18f7abff 49-51,57
+  s_999832efc3652f::t_0e62f7025dfc8c 1-48,52-56,58-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "204594b1cc27b8e1ca7010c6da7e0f5a0d75f524",
+  "prompts": {},
+  "sessions": {
+    "s_999832efc3652f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ee517-0633-7261-92d2-bc5f67d46a82",
+        "model": "gpt-5.5"
+      },
+      "human_author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
