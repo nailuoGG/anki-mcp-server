@@ -1,0 +1,22 @@
+CHANGELOG.md
+  s_9d8f7bceb2e77d::t_f34f6cbe3012e1 11-13,25-26
+README.md
+  s_9d8f7bceb2e77d::t_f34f6cbe3012e1 18,246-255
+src/index.test.ts
+  s_9d8f7bceb2e77d::t_f34f6cbe3012e1 1-30,58-101
+package.json
+  s_9d8f7bceb2e77d::t_f11ce19f3bab14 36-37,41-42,47-49,52
+  s_9d8f7bceb2e77d::t_3d3874c8c746f4 24
+  s_9d8f7bceb2e77d::t_a5cf2d98384407 30-31
+  s_9d8f7bceb2e77d::t_f80f7104b37d8a 44,80
+src/mcpTools.ts
+  s_9d8f7bceb2e77d::t_9a8b9b78cbe86b 998,1000
+  s_9d8f7bceb2e77d::t_f34f6cbe3012e1 253,259-266,269-270,983,991-994,996-997,999,1001-1004,1008,1017-1018
+  s_9d8f7bceb2e77d::t_cd46e5cc751a2a 985,995,1005
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "25377a0596fba6d0ba305ef4d71d688999cd3d23",
+  "prompts": {}
+}
