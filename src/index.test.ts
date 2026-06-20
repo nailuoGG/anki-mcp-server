@@ -47,6 +47,7 @@ const createMockClient = (overrides: Partial<Record<keyof AnkiClient, unknown>> 
 		}),
 		createModel: jest.fn<AnkiClient["createModel"]>().mockResolvedValue(),
 		addNote: jest.fn<AnkiClient["addNote"]>().mockResolvedValue(777),
+		addNotes: jest.fn<AnkiClient["addNotes"]>().mockResolvedValue([777]),
 		canAddNotesWithErrorDetail: jest
 			.fn<AnkiClient["canAddNotesWithErrorDetail"]>()
 			.mockResolvedValue([{ canAdd: true }]),
@@ -211,13 +212,14 @@ describe("McpToolHandler note workflows", () => {
 		const getModelFieldNames = jest
 			.fn<(modelName: string) => Promise<string[]>>()
 			.mockResolvedValue(["Front", "Back"]);
-		const addNote = jest
-			.fn<AnkiClient["addNote"]>()
-			.mockResolvedValueOnce(101)
-			.mockResolvedValueOnce(null);
+		const addNotes = jest.fn<AnkiClient["addNotes"]>().mockResolvedValue([101, null]);
+		const canAddNotesWithErrorDetail = jest
+			.fn<AnkiClient["canAddNotesWithErrorDetail"]>()
+			.mockResolvedValue([{ canAdd: true }, { canAdd: true }]);
 		const client = createMockClient({
 			getModelFieldNames,
-			addNote,
+			addNotes,
+			canAddNotesWithErrorDetail,
 			getDeckNames: jest.fn<() => Promise<string[]>>().mockResolvedValue(["Default"]),
 			getModelNames: jest.fn<() => Promise<string[]>>().mockResolvedValue(["Basic"]),
 		});
@@ -232,6 +234,7 @@ describe("McpToolHandler note workflows", () => {
 
 		expect(result.isError).toBe(true);
 		expect(getModelFieldNames).toHaveBeenCalledTimes(1);
+		expect(addNotes).toHaveBeenCalledTimes(1);
 		expect(result.structuredContent).toMatchObject({
 			total: 2,
 			successful: 1,
@@ -243,6 +246,46 @@ describe("McpToolHandler note workflows", () => {
 					index: 1,
 					error: "Anki rejected note creation without returning a note ID.",
 				},
+			],
+		});
+	});
+
+	it("preflights batch notes once and only submits creatable notes", async () => {
+		const addNotes = jest.fn<AnkiClient["addNotes"]>().mockResolvedValue([202]);
+		const canAddNotesWithErrorDetail = jest
+			.fn<AnkiClient["canAddNotesWithErrorDetail"]>()
+			.mockResolvedValue([{ canAdd: false, error: "duplicate" }, { canAdd: true }]);
+		const client = createMockClient({
+			addNotes,
+			canAddNotesWithErrorDetail,
+			getDeckNames: jest.fn<() => Promise<string[]>>().mockResolvedValue(["Default"]),
+			getModelNames: jest.fn<() => Promise<string[]>>().mockResolvedValue(["Basic"]),
+		});
+		const handler = new McpToolHandler(client);
+
+		const result = await handler.executeTool("anki_batch_create_notes", {
+			notes: [
+				{ type: "Basic", deck: "Default", fields: { Front: "Q1", Back: "A1" } },
+				{ type: "Basic", deck: "Default", fields: { Front: "Q2", Back: "A2" } },
+			],
+		});
+
+		expect(canAddNotesWithErrorDetail).toHaveBeenCalledTimes(1);
+		expect(addNotes).toHaveBeenCalledWith([
+			{
+				deckName: "Default",
+				modelName: "Basic",
+				fields: { Front: "Q2", Back: "A2" },
+				tags: [],
+				options: { allowDuplicate: false },
+			},
+		]);
+		expect(result.structuredContent).toMatchObject({
+			successful: 1,
+			failed: 1,
+			results: [
+				{ success: false, index: 0, error: "Cannot create note: duplicate" },
+				{ success: true, index: 1, noteId: 202 },
 			],
 		});
 	});
