@@ -9,7 +9,7 @@ This directory contains the GitHub Actions workflows for the Anki MCP Server pro
 **Purpose:** Continuous Integration - Code quality and testing
 
 **Jobs:**
-- `test`: Multi-version testing (Node 18.x, 20.x, 22.x)
+- `test`: Multi-version testing (Node 20.x, 22.x)
   - Lint code
   - Format check
   - Build project
@@ -25,7 +25,7 @@ This directory contains the GitHub Actions workflows for the Anki MCP Server pro
 **Purpose:** Publish stable releases to NPM and MCP Registry
 
 **Jobs:**
-- `test`: Pre-release testing (Node 18.x, 20.x, 22.x)
+- `test`: Pre-release testing (Node 20.x, 22.x)
   - Same as CI test job
 - `publish-npm`: Publish to NPM
   - Build and publish to NPM with provenance
@@ -44,7 +44,7 @@ This directory contains the GitHub Actions workflows for the Anki MCP Server pro
 **Purpose:** Publish beta releases for testing
 
 **Jobs:**
-- `beta-test`: Beta testing (Node 18.x, 20.x)
+- `beta-test`: Beta testing (Node 20.x, 22.x)
   - Same as CI test job
 - `beta-publish-npm`: Publish beta to NPM
   - Generate beta version number

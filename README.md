@@ -8,18 +8,21 @@ A Model Context Protocol (MCP) server that enables LLMs to interact with Anki fl
 
 ### Tools
 
-- `list_decks` - List all available Anki decks
-- `create_deck` - Create a new Anki deck
-- `create_note` - Create a new note (Basic or Cloze)
-- `batch_create_notes` - Create multiple notes at once
-- `search_notes` - Search for notes using Anki query syntax
-- `get_note_info` - Get detailed information about a note
-- `update_note` - Update an existing note
-- `delete_note` - Delete one or multiple notes
-- `list_note_types` - List all available note types
-- `create_note_type` - Create a new note type
-- `get_note_type_info` - Get detailed structure of a note type
-- `sync` - Trigger AnkiWeb sync (fire-and-forget; success means Anki accepted the request, not that AnkiWeb received the data — a blocking dialog in Anki can silently keep the sync queued)
+- `anki_check_connection` - Check whether AnkiConnect is reachable
+- `anki_list_decks` - List all available Anki decks
+- `anki_create_deck` - Create a new Anki deck
+- `anki_create_note` - Create a new note
+- `anki_batch_create_notes` - Create multiple notes at once
+- `anki_search_notes` - Search for notes using Anki query syntax
+- `anki_get_note_info` - Get detailed information about a note
+- `anki_update_note` - Update an existing note's fields and/or tags
+- `anki_delete_note` - Delete one or multiple notes
+- `anki_list_note_types` - List all available note types
+- `anki_create_note_type` - Create a new note type
+- `anki_get_note_type_info` - Get detailed structure of a note type
+- `anki_sync` - Trigger AnkiWeb sync (fire-and-forget; success means Anki accepted the request, not that AnkiWeb received the data; a blocking dialog in Anki can silently keep the sync queued)
+
+Legacy unprefixed tool names such as `create_note` and `list_decks` remain callable for existing clients, but new agent integrations should use the `anki_*` names.
 
 ### Resources
 
@@ -32,6 +35,7 @@ A Model Context Protocol (MCP) server that enables LLMs to interact with Anki fl
 
 1. [Anki](https://apps.ankiweb.net/) installed on your system
 2. [AnkiConnect](https://ankiweb.net/shared/info/2055492159) add-on installed in Anki
+3. Node.js 20.11 or newer
 
 ## Configuration
 
@@ -41,7 +45,7 @@ This repository supports Anthropic Desktop Extensions (MCPB). The easiest way to
 
 1. Generate the `.mcpb` file locally using the provided script:
 ```bash
-npm run pack
+npm run mcpb
 ```
 
 2. Open Claude Desktop Settings → Extensions and drag the generated `.mcpb` file in, then click Install.
@@ -127,7 +131,7 @@ Once installed, Claude Code will automatically use the skill when you ask it to 
 Create a distributable Desktop Extension bundle for Claude Desktop:
 
 ```bash
-npm run pack
+npm run mcpb
 ```
 
 This will build the project and generate a `.mcpb` archive from the current repository, validating `manifest.json`. Test by dragging it into Claude Desktop's Extensions settings. Reference: [Desktop Extensions: One-click MCP server installation for Claude Desktop](https://www.anthropic.com/engineering/desktop-extensions).
@@ -197,13 +201,7 @@ Run the test suite:
 npm test
 ```
 
-This executes tests for:
-
-- Server initialization
-- AnkiConnect communication
-- Note operations (create/read/update/delete)
-- Deck management
-- Error handling
+This executes unit tests for MCP tool schemas, structured tool results, note creation, search/update/delete workflows, and error handling. These tests use mocked AnkiConnect clients; use MCP Inspector with a running Anki instance for manual integration checks.
 
 ### Debugging
 

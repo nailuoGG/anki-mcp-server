@@ -106,6 +106,10 @@ export class AnkiClient {
 		throw lastError || new AnkiConnectionError("Unknown error occurred");
 	}
 
+	private async executeOnce<T>(operation: () => Promise<T>): Promise<T> {
+		return this.executeWithRetry(operation, 0);
+	}
+
 	/**
 	 * Normalize errors from yanki-connect
 	 */
@@ -162,9 +166,19 @@ export class AnkiClient {
 	 */
 	async checkConnection(): Promise<boolean> {
 		try {
-			// Use invoke() to check connection status
-			await this.executeWithRetry(() => this.client.invoke("version"));
+			await this.getVersion();
 			return true;
+		} catch (error) {
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
+		}
+	}
+
+	/**
+	 * Get the AnkiConnect API version.
+	 */
+	async getVersion(): Promise<number> {
+		try {
+			return await this.executeWithRetry(() => this.client.miscellaneous.version());
 		} catch (error) {
 			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
@@ -178,7 +192,7 @@ export class AnkiClient {
 	 */
 	async sync(): Promise<void> {
 		try {
-			await this.executeWithRetry(() => this.client.invoke("sync"));
+			await this.executeOnce(() => this.client.miscellaneous.sync());
 		} catch (error) {
 			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
@@ -200,7 +214,7 @@ export class AnkiClient {
 	 */
 	async createDeck(name: string): Promise<number> {
 		try {
-			const result = await this.executeWithRetry(() => this.client.deck.createDeck({ deck: name }));
+			const result = await this.executeOnce(() => this.client.deck.createDeck({ deck: name }));
 			// Convert to number if needed
 			return typeof result === "number" ? result : 0;
 		} catch (error) {
@@ -267,7 +281,7 @@ export class AnkiClient {
 		};
 	}): Promise<number | null> {
 		try {
-			return await this.executeWithRetry(() =>
+			return await this.executeOnce(() =>
 				this.client.note.addNote({
 					note: {
 						deckName: params.deckName,
@@ -298,7 +312,7 @@ export class AnkiClient {
 		}[]
 	): Promise<(string | null)[] | null> {
 		try {
-			return await this.executeWithRetry(() =>
+			return await this.executeOnce(() =>
 				this.client.note.addNotes({
 					notes: notes.map((note) => ({
 						deckName: note.deckName,
@@ -307,6 +321,47 @@ export class AnkiClient {
 						tags: note.tags || [],
 						options: {
 							allowDuplicate: false,
+							duplicateScope: "deck",
+						},
+					})),
+				})
+			);
+		} catch (error) {
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
+		}
+	}
+
+	async canAddNotesWithErrorDetail(
+		notes: {
+			deckName: string;
+			modelName: string;
+			fields: Record<string, string>;
+			tags?: string[];
+			options?: {
+				allowDuplicate?: boolean;
+			};
+		}[]
+	): Promise<
+		(
+			| {
+					canAdd: true;
+			  }
+			| {
+					canAdd: false;
+					error: string;
+			  }
+		)[]
+	> {
+		try {
+			return await this.executeWithRetry(() =>
+				this.client.note.canAddNotesWithErrorDetail({
+					notes: notes.map((note) => ({
+						deckName: note.deckName,
+						modelName: note.modelName,
+						fields: note.fields,
+						tags: note.tags || [],
+						options: {
+							allowDuplicate: note.options?.allowDuplicate || false,
 							duplicateScope: "deck",
 						},
 					})),
@@ -362,7 +417,7 @@ export class AnkiClient {
 	 */
 	async updateNoteFields(params: { id: number; fields: Record<string, string> }): Promise<void> {
 		try {
-			await this.executeWithRetry(() =>
+			await this.executeOnce(() =>
 				this.client.note.updateNoteFields({
 					note: {
 						id: params.id,
@@ -375,12 +430,25 @@ export class AnkiClient {
 		}
 	}
 
+	async updateNoteTags(params: { id: number; tags: string[] }): Promise<void> {
+		try {
+			await this.executeOnce(() =>
+				this.client.note.updateNoteTags({
+					note: params.id,
+					tags: params.tags,
+				})
+			);
+		} catch (error) {
+			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
+		}
+	}
+
 	/**
 	 * Delete notes
 	 */
 	async deleteNotes(ids: number[]): Promise<void> {
 		try {
-			await this.executeWithRetry(() => this.client.note.deleteNotes({ notes: ids }));
+			await this.executeOnce(() => this.client.note.deleteNotes({ notes: ids }));
 		} catch (error) {
 			throw this.wrapError(error instanceof Error ? error : new Error(String(error)));
 		}
@@ -407,7 +475,7 @@ export class AnkiClient {
 				Back: template.back,
 			}));
 
-			await this.executeWithRetry(() =>
+			await this.executeOnce(() =>
 				this.client.model.createModel({
 					modelName: params.modelName,
 					inOrderFields: params.inOrderFields,

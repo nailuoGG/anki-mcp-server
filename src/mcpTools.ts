@@ -1,387 +1,769 @@
 /**
- * MCP Tool handlers for Anki
+ * MCP Tool handlers for Anki.
  */
-import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
+import {
+	ErrorCode,
+	McpError,
+	type CallToolResult,
+	type ListToolsResult,
+	type Tool,
+} from "@modelcontextprotocol/sdk/types.js";
 import { AnkiClient } from "./utils.js";
 
-/**
- * Handles all MCP tool operations for Anki
- */
-export class McpToolHandler {
-	private ankiClient: AnkiClient;
+type JsonObjectSchema = {
+	type: "object";
+	properties?: Record<string, object>;
+	required?: string[];
+	additionalProperties?: boolean | object;
+	[key: string]: unknown;
+};
 
-	constructor(ankiClient?: AnkiClient) {
-		this.ankiClient = ankiClient ?? new AnkiClient();
-	}
+type NoteInput = {
+	type: string;
+	deck: string;
+	fields: Record<string, string>;
+	tags: string[];
+};
 
-	/**
-	 * Get tool schema for all available tools
-	 */
-	async getToolSchema(): Promise<{
-		tools: {
-			name: string;
-			description: string;
-			inputSchema: Record<string, unknown>;
-		}[];
-	}> {
-		return {
-			tools: [
-				{
-					name: "list_decks",
-					description: "List all available Anki decks",
-					inputSchema: {
-						type: "object",
-						properties: {},
-						required: [],
-					},
+type BatchNoteResult = {
+	success: boolean;
+	index: number;
+	noteId?: number;
+	error?: string;
+};
+
+type AnkiNoteInfo = Awaited<ReturnType<AnkiClient["notesInfo"]>>[number];
+
+const inputSchema = (schema: JsonObjectSchema): Tool["inputSchema"] =>
+	schema as Tool["inputSchema"];
+
+const outputSchema = (schema: JsonObjectSchema): Tool["outputSchema"] =>
+	schema as Tool["outputSchema"];
+
+const noInput = inputSchema({
+	type: "object",
+	properties: {},
+	additionalProperties: false,
+});
+
+const tagsSchema = {
+	type: "array",
+	items: {
+		type: "string",
+	},
+	description:
+		"Optional tags for organization. Use strings without spaces for best Anki compatibility.",
+};
+
+const fieldsSchema = {
+	type: "object",
+	description:
+		"Note fields keyed by exact model field names. For Basic: {Front: 'question', Back: 'answer'}.",
+	additionalProperties: {
+		type: "string",
+	},
+};
+
+const noteTypeNameSchema = {
+	type: "string",
+	description: "Note type/model name. Common: Basic, Cloze.",
+};
+
+const deckNameSchema = {
+	type: "string",
+	description: "Target deck name. The deck is created if it does not exist.",
+};
+
+const noteInfoSchema: JsonObjectSchema = {
+	type: "object",
+	properties: {
+		noteId: { type: "number" },
+		modelName: { type: "string" },
+		tags: { type: "array", items: { type: "string" } },
+		fields: {
+			type: "object",
+			additionalProperties: {
+				type: "object",
+				properties: {
+					value: { type: "string" },
+					order: { type: "number" },
 				},
-				{
-					name: "sync",
-					description:
-						"Trigger a sync between the local Anki collection and AnkiWeb. Fire-and-forget: success means Anki accepted the request, not that AnkiWeb received the data. If a blocking dialog is open in Anki (sync conflict, full-sync prompt, re-auth), the sync stays queued until a human dismisses it. Requires the user to be signed into AnkiWeb via the Anki GUI.",
-					inputSchema: {
-						type: "object",
-						properties: {},
-						required: [],
-					},
+			},
+		},
+	},
+	required: ["noteId", "modelName", "tags", "fields"],
+};
+
+const noteInputSchema: JsonObjectSchema = {
+	type: "object",
+	properties: {
+		type: noteTypeNameSchema,
+		deck: deckNameSchema,
+		fields: fieldsSchema,
+		tags: tagsSchema,
+	},
+	required: ["type", "deck", "fields"],
+	additionalProperties: false,
+};
+
+const TOOLS: Tool[] = [
+	{
+		name: "anki_check_connection",
+		title: "Check Anki Connection",
+		description: "Check whether AnkiConnect is reachable and return the API version.",
+		inputSchema: noInput,
+		outputSchema: outputSchema({
+			type: "object",
+			properties: {
+				connected: { type: "boolean" },
+				version: { type: "number" },
+			},
+			required: ["connected", "version"],
+		}),
+		annotations: {
+			readOnlyHint: true,
+			openWorldHint: false,
+		},
+	},
+	{
+		name: "anki_list_decks",
+		title: "List Anki Decks",
+		description: "List all available Anki decks.",
+		inputSchema: noInput,
+		outputSchema: outputSchema({
+			type: "object",
+			properties: {
+				decks: { type: "array", items: { type: "string" } },
+				count: { type: "number" },
+			},
+			required: ["decks", "count"],
+		}),
+		annotations: {
+			readOnlyHint: true,
+			openWorldHint: false,
+		},
+	},
+	{
+		name: "anki_sync",
+		title: "Sync Anki",
+		description:
+			"Request AnkiWeb sync. Success means Anki accepted the request, not that AnkiWeb completed it.",
+		inputSchema: noInput,
+		outputSchema: outputSchema({
+			type: "object",
+			properties: {
+				success: { type: "boolean" },
+				message: { type: "string" },
+			},
+			required: ["success", "message"],
+		}),
+		annotations: {
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: false,
+			openWorldHint: true,
+		},
+	},
+	{
+		name: "anki_create_deck",
+		title: "Create Anki Deck",
+		description: "Create an Anki deck by name.",
+		inputSchema: inputSchema({
+			type: "object",
+			properties: {
+				name: { type: "string", minLength: 1, description: "Deck name to create." },
+			},
+			required: ["name"],
+			additionalProperties: false,
+		}),
+		outputSchema: outputSchema({
+			type: "object",
+			properties: {
+				deckId: { type: "number" },
+				name: { type: "string" },
+			},
+			required: ["deckId", "name"],
+		}),
+		annotations: {
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: false,
+		},
+	},
+	{
+		name: "anki_list_note_types",
+		title: "List Anki Note Types",
+		description: "List all available Anki note types/models.",
+		inputSchema: noInput,
+		outputSchema: outputSchema({
+			type: "object",
+			properties: {
+				noteTypes: { type: "array", items: { type: "string" } },
+				count: { type: "number" },
+			},
+			required: ["noteTypes", "count"],
+		}),
+		annotations: {
+			readOnlyHint: true,
+			openWorldHint: false,
+		},
+	},
+	{
+		name: "anki_get_note_type_info",
+		title: "Get Anki Note Type Info",
+		description:
+			"Get fields and card templates for a note type. Call this before creating notes for a custom model.",
+		inputSchema: inputSchema({
+			type: "object",
+			properties: {
+				modelName: { type: "string", minLength: 1, description: "Note type/model name." },
+				includeCss: { type: "boolean", description: "Include CSS styling when true." },
+			},
+			required: ["modelName"],
+			additionalProperties: false,
+		}),
+		outputSchema: outputSchema({
+			type: "object",
+			properties: {
+				modelName: { type: "string" },
+				fields: { type: "array", items: { type: "string" } },
+				templates: { type: "object" },
+				css: { type: "string" },
+			},
+			required: ["modelName", "fields", "templates"],
+		}),
+		annotations: {
+			readOnlyHint: true,
+			openWorldHint: false,
+		},
+	},
+	{
+		name: "anki_create_note",
+		title: "Create Anki Note",
+		description:
+			"Create one note. Call anki_get_note_type_info first for custom fields. Use anki_batch_create_notes for multiple notes.",
+		inputSchema: inputSchema({
+			type: "object",
+			properties: {
+				type: noteTypeNameSchema,
+				deck: deckNameSchema,
+				fields: fieldsSchema,
+				allowDuplicate: {
+					type: "boolean",
+					default: false,
+					description: "Allow duplicate notes in the target deck.",
 				},
-				{
-					name: "create_deck",
-					description: "Create a new Anki deck",
-					inputSchema: {
+				tags: tagsSchema,
+			},
+			required: ["type", "deck", "fields"],
+			additionalProperties: false,
+		}),
+		outputSchema: outputSchema({
+			type: "object",
+			properties: {
+				noteId: { type: "number" },
+				deck: { type: "string" },
+				modelName: { type: "string" },
+			},
+			required: ["noteId", "deck", "modelName"],
+		}),
+		annotations: {
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: false,
+			openWorldHint: false,
+		},
+	},
+	{
+		name: "anki_batch_create_notes",
+		title: "Batch Create Anki Notes",
+		description:
+			"Create up to 50 notes. Recommended batch size is 10-20. Returns per-note success and error details.",
+		inputSchema: inputSchema({
+			type: "object",
+			properties: {
+				notes: {
+					type: "array",
+					minItems: 1,
+					maxItems: 50,
+					items: noteInputSchema,
+					description: "Notes to create.",
+				},
+				allowDuplicate: {
+					type: "boolean",
+					default: false,
+					description: "Allow duplicate notes in their target decks.",
+				},
+				stopOnError: {
+					type: "boolean",
+					default: false,
+					description: "Stop after the first failed note.",
+				},
+			},
+			required: ["notes"],
+			additionalProperties: false,
+		}),
+		outputSchema: outputSchema({
+			type: "object",
+			properties: {
+				results: {
+					type: "array",
+					items: {
 						type: "object",
 						properties: {
-							name: {
-								type: "string",
-								description: "Name of the deck to create",
-							},
+							success: { type: "boolean" },
+							index: { type: "number" },
+							noteId: { type: "number" },
+							error: { type: "string" },
 						},
-						required: ["name"],
+						required: ["success", "index"],
 					},
 				},
-				{
-					name: "get_note_type_info",
-					description: "Get detailed structure of a note type",
-					inputSchema: {
-						type: "object",
-						properties: {
-							modelName: {
-								type: "string",
-								description: "Name of the note type/model",
-							},
-							includeCss: {
-								type: "boolean",
-								description: "Whether to include CSS information",
-							},
-						},
-						required: ["modelName"],
-					},
+				total: { type: "number" },
+				successful: { type: "number" },
+				failed: { type: "number" },
+			},
+			required: ["results", "total", "successful", "failed"],
+		}),
+		annotations: {
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: false,
+			openWorldHint: false,
+		},
+	},
+	{
+		name: "anki_search_notes",
+		title: "Search Anki Notes",
+		description: "Search notes with Anki query syntax and return paginated note details.",
+		inputSchema: inputSchema({
+			type: "object",
+			properties: {
+				query: { type: "string", minLength: 1, description: "Anki search query." },
+				limit: {
+					type: "number",
+					minimum: 1,
+					maximum: 100,
+					default: 20,
+					description: "Maximum note details to return.",
 				},
-				{
-					name: "create_note",
-					description:
-						"Create a single note. For multiple notes, use batch_create_notes instead (10-20 notes per batch recommended). Always call get_note_type_info first to understand required fields.",
-					inputSchema: {
-						type: "object",
-						properties: {
-							type: {
-								type: "string",
-								description:
-									"Note type. Common: 'Basic' (has Front/Back), 'Cloze' (has Text with {{c1::deletions}})",
-							},
-							deck: {
-								type: "string",
-								description: "Target deck name",
-							},
-							fields: {
-								type: "object",
-								description:
-									"Note fields. Basic type: {Front: 'question', Back: 'answer'}. Cloze type: {Text: 'text with {{c1::deletion}}'}. Call get_note_type_info for custom types.",
-								additionalProperties: true,
-							},
-							allowDuplicate: {
-								type: "boolean",
-								description: "Whether to allow duplicate notes (default: false)",
-								default: false,
-							},
-							tags: {
-								type: "array",
-								items: {
-									type: "string",
-								},
-								description: "Optional tags for organization",
-							},
-						},
-						required: ["type", "deck", "fields"],
-					},
+				offset: {
+					type: "number",
+					minimum: 0,
+					default: 0,
+					description: "Zero-based note result offset.",
 				},
-				{
-					name: "batch_create_notes",
-					description:
-						"Create multiple notes at once. IMPORTANT: For optimal performance, limit batch size to 10-20 notes at a time. For larger sets, split into multiple batches. Always call get_note_type_info first to understand the required fields.",
-					inputSchema: {
-						type: "object",
-						properties: {
-							notes: {
-								type: "array",
-								description:
-									"Array of notes to create. RECOMMENDED: 10-20 notes per batch for best performance. Maximum: 50 notes.",
-								maxItems: 50,
-								items: {
-									type: "object",
-									properties: {
-										type: {
-											type: "string",
-											description:
-												"Note type. Common types: 'Basic' (Front/Back fields), 'Cloze' (Text field with {{c1::text}} deletions)",
-											enum: ["Basic", "Cloze"],
-										},
-										deck: {
-											type: "string",
-											description: "Target deck name",
-										},
-										fields: {
-											type: "object",
-											description:
-												"Note fields. For Basic: {Front: '...', Back: '...'}. For Cloze: {Text: '...with {{c1::deletion}}'}",
-											additionalProperties: true,
-										},
-										tags: {
-											type: "array",
-											items: {
-												type: "string",
-											},
-											description: "Optional tags for organization",
-										},
-									},
-									required: ["type", "deck", "fields"],
-								},
-							},
-							allowDuplicate: {
-								type: "boolean",
-								description: "Whether to allow duplicate notes (default: false)",
-								default: false,
-							},
-							stopOnError: {
-								type: "boolean",
-								description:
-									"Whether to stop on first error or continue with remaining notes (default: false)",
-								default: false,
-							},
-						},
-						required: ["notes"],
-						examples: [
-							{
-								notes: [
-									{
-										type: "Basic",
-										deck: "Programming",
-										fields: {
-											Front: "What is a closure?",
-											Back: "A function with access to its outer scope",
-										},
-										tags: ["javascript", "concepts"],
-									},
-									{
-										type: "Cloze",
-										deck: "Programming",
-										fields: {
-											Text: "In JavaScript, {{c1::const}} declares a {{c2::block-scoped}} variable",
-										},
-										tags: ["javascript", "syntax"],
-									},
-								],
-							},
-						],
-					},
+			},
+			required: ["query"],
+			additionalProperties: false,
+		}),
+		outputSchema: outputSchema({
+			type: "object",
+			properties: {
+				query: { type: "string" },
+				total: { type: "number" },
+				offset: { type: "number" },
+				limit: { type: "number" },
+				hasMore: { type: "boolean" },
+				nextOffset: { type: "number" },
+				notes: { type: "array", items: noteInfoSchema },
+			},
+			required: ["query", "total", "offset", "limit", "hasMore", "notes"],
+		}),
+		annotations: {
+			readOnlyHint: true,
+			openWorldHint: false,
+		},
+	},
+	{
+		name: "anki_get_note_info",
+		title: "Get Anki Note Info",
+		description: "Get detailed information for one note ID.",
+		inputSchema: inputSchema({
+			type: "object",
+			properties: {
+				noteId: { type: "number", minimum: 1, description: "Positive Anki note ID." },
+			},
+			required: ["noteId"],
+			additionalProperties: false,
+		}),
+		outputSchema: outputSchema(noteInfoSchema),
+		annotations: {
+			readOnlyHint: true,
+			openWorldHint: false,
+		},
+	},
+	{
+		name: "anki_update_note",
+		title: "Update Anki Note",
+		description: "Update note fields and/or replace its tags.",
+		inputSchema: inputSchema({
+			type: "object",
+			properties: {
+				id: { type: "number", minimum: 1, description: "Positive Anki note ID." },
+				fields: fieldsSchema,
+				tags: {
+					...tagsSchema,
+					description: "Replacement tag list. Pass an empty array to clear tags.",
 				},
-				{
-					name: "search_notes",
-					description: "Search for notes using Anki query syntax",
-					inputSchema: {
-						type: "object",
-						properties: {
-							query: {
-								type: "string",
-								description: "Anki search query",
-							},
-						},
-						required: ["query"],
-					},
+			},
+			required: ["id"],
+			additionalProperties: false,
+		}),
+		outputSchema: outputSchema({
+			type: "object",
+			properties: {
+				success: { type: "boolean" },
+				noteId: { type: "number" },
+				updatedFields: { type: "boolean" },
+				updatedTags: { type: "boolean" },
+			},
+			required: ["success", "noteId", "updatedFields", "updatedTags"],
+		}),
+		annotations: {
+			readOnlyHint: false,
+			destructiveHint: true,
+			idempotentHint: true,
+			openWorldHint: false,
+		},
+	},
+	{
+		name: "anki_delete_note",
+		title: "Delete Anki Notes",
+		description: "Delete one note by noteId or multiple notes by noteIds.",
+		inputSchema: inputSchema({
+			type: "object",
+			properties: {
+				noteId: { type: "number", minimum: 1, description: "Single note ID to delete." },
+				noteIds: {
+					type: "array",
+					minItems: 1,
+					items: { type: "number", minimum: 1 },
+					description: "Multiple note IDs to delete.",
 				},
-				{
-					name: "get_note_info",
-					description: "Get detailed information about a note",
-					inputSchema: {
-						type: "object",
-						properties: {
-							noteId: {
-								type: "number",
-								description: "Note ID",
-							},
-						},
-						required: ["noteId"],
-					},
+			},
+			additionalProperties: false,
+		}),
+		outputSchema: outputSchema({
+			type: "object",
+			properties: {
+				success: { type: "boolean" },
+				deletedCount: { type: "number" },
+				noteIds: { type: "array", items: { type: "number" } },
+			},
+			required: ["success", "deletedCount", "noteIds"],
+		}),
+		annotations: {
+			readOnlyHint: false,
+			destructiveHint: true,
+			idempotentHint: true,
+			openWorldHint: false,
+		},
+	},
+	{
+		name: "anki_create_note_type",
+		title: "Create Anki Note Type",
+		description: "Create a custom Anki note type/model with fields and card templates.",
+		inputSchema: inputSchema({
+			type: "object",
+			properties: {
+				name: { type: "string", minLength: 1, description: "New note type name." },
+				fields: {
+					type: "array",
+					minItems: 1,
+					items: { type: "string", minLength: 1 },
+					description: "Field names in order.",
 				},
-				{
-					name: "update_note",
-					description: "Update an existing note",
-					inputSchema: {
+				css: { type: "string", description: "Optional model CSS." },
+				templates: {
+					type: "array",
+					minItems: 1,
+					items: {
 						type: "object",
 						properties: {
-							id: {
-								type: "number",
-								description: "Note ID",
-							},
-							fields: {
-								type: "object",
-								description: "Fields to update",
-							},
-							tags: {
-								type: "array",
-								items: {
-									type: "string",
-								},
-								description: "New tags for the note",
-							},
+							name: { type: "string", minLength: 1 },
+							front: { type: "string" },
+							back: { type: "string" },
 						},
-						required: ["id", "fields"],
-					},
-				},
-				{
-					name: "delete_note",
-					description: "Delete one or multiple notes",
-					inputSchema: {
-						type: "object",
-						properties: {
-							noteId: {
-								type: "number",
-								description: "Single note ID to delete",
-							},
-							noteIds: {
-								type: "array",
-								items: {
-									type: "number",
-								},
-								description: "Multiple note IDs to delete",
-							},
-						},
-						required: [],
+						required: ["name", "front", "back"],
 						additionalProperties: false,
 					},
+					description: "Card templates.",
 				},
-				{
-					name: "list_note_types",
-					description: "List all available note types",
-					inputSchema: {
-						type: "object",
-						properties: {},
-						required: [],
-					},
-				},
-				{
-					name: "create_note_type",
-					description: "Create a new note type",
-					inputSchema: {
-						type: "object",
-						properties: {
-							name: {
-								type: "string",
-								description: "Name of the new note type",
-							},
-							fields: {
-								type: "array",
-								items: {
-									type: "string",
-								},
-								description: "Field names for the note type",
-							},
-							css: {
-								type: "string",
-								description: "CSS styling for the note type",
-							},
-							templates: {
-								type: "array",
-								items: {
-									type: "object",
-									properties: {
-										name: {
-											type: "string",
-										},
-										front: {
-											type: "string",
-										},
-										back: {
-											type: "string",
-										},
-									},
-									required: ["name", "front", "back"],
-								},
-								description: "Card templates",
-							},
-						},
-						required: ["name", "fields", "templates"],
-					},
-				},
-			],
-		};
+			},
+			required: ["name", "fields", "templates"],
+			additionalProperties: false,
+		}),
+		outputSchema: outputSchema({
+			type: "object",
+			properties: {
+				success: { type: "boolean" },
+				modelName: { type: "string" },
+				fields: { type: "array", items: { type: "string" } },
+				templates: { type: "number" },
+			},
+			required: ["success", "modelName", "fields", "templates"],
+		}),
+		annotations: {
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: false,
+			openWorldHint: false,
+		},
+	},
+];
+
+const LEGACY_TOOL_ALIASES: Record<string, string> = {
+	list_decks: "anki_list_decks",
+	sync: "anki_sync",
+	create_deck: "anki_create_deck",
+	get_note_type_info: "anki_get_note_type_info",
+	create_note: "anki_create_note",
+	batch_create_notes: "anki_batch_create_notes",
+	search_notes: "anki_search_notes",
+	get_note_info: "anki_get_note_info",
+	update_note: "anki_update_note",
+	delete_note: "anki_delete_note",
+	list_note_types: "anki_list_note_types",
+	create_note_type: "anki_create_note_type",
+};
+
+const result = <T extends Record<string, unknown>>(
+	data: T,
+	options: { isError?: boolean } = {}
+): CallToolResult => ({
+	content: [
+		{
+			type: "text",
+			text: JSON.stringify(data, null, 2),
+		},
+	],
+	structuredContent: data,
+	...(options.isError ? { isError: true } : {}),
+});
+
+const errorResult = (error: unknown): CallToolResult => ({
+	content: [
+		{
+			type: "text",
+			text: `Error: ${errorMessage(error)}`,
+		},
+	],
+	isError: true,
+});
+
+const errorMessage = (error: unknown): string =>
+	error instanceof Error ? error.message : String(error);
+
+const requireString = (value: unknown, fieldName: string): string => {
+	if (typeof value !== "string" || value.trim().length === 0) {
+		throw new Error(`${fieldName} must be a non-empty string`);
 	}
 
-	/**
-	 * Handle tool execution
-	 */
-	async executeTool(
-		name: string,
-		args: Record<string, unknown>
-	): Promise<{
-		content: {
-			type: string;
-			text: string;
-		}[];
-		isError?: boolean;
-	}> {
+	return value;
+};
+
+const optionalBoolean = (value: unknown, defaultValue = false): boolean => {
+	if (value === undefined) {
+		return defaultValue;
+	}
+
+	if (typeof value !== "boolean") {
+		throw new Error("Boolean option must be true or false");
+	}
+
+	return value;
+};
+
+const requirePositiveInteger = (value: unknown, fieldName: string): number => {
+	if (!Number.isInteger(value) || (value as number) <= 0) {
+		throw new Error(`${fieldName} must be a positive integer`);
+	}
+
+	return value as number;
+};
+
+const optionalInteger = (
+	value: unknown,
+	fieldName: string,
+	defaultValue: number,
+	minimum: number,
+	maximum?: number
+): number => {
+	if (value === undefined) {
+		return defaultValue;
+	}
+
+	if (!Number.isInteger(value) || (value as number) < minimum) {
+		throw new Error(`${fieldName} must be an integer >= ${minimum}`);
+	}
+
+	if (maximum !== undefined && (value as number) > maximum) {
+		throw new Error(`${fieldName} must be <= ${maximum}`);
+	}
+
+	return value as number;
+};
+
+const requireStringArray = (value: unknown, fieldName: string): string[] => {
+	if (!Array.isArray(value) || value.length === 0) {
+		throw new Error(`${fieldName} must be a non-empty array of strings`);
+	}
+
+	const values = value.map((item) => requireString(item, `${fieldName} item`));
+	const duplicates = values.filter((item, index) => values.indexOf(item) !== index);
+	if (duplicates.length > 0) {
+		throw new Error(
+			`${fieldName} contains duplicate value(s): ${[...new Set(duplicates)].join(", ")}`
+		);
+	}
+
+	return values;
+};
+
+const parseTags = (value: unknown): string[] => {
+	if (value === undefined) {
+		return [];
+	}
+
+	if (!Array.isArray(value)) {
+		throw new Error("tags must be an array of strings");
+	}
+
+	return value.map((tag) => requireString(tag, "tag"));
+};
+
+const parseFields = (value: unknown): Record<string, string> => {
+	if (!value || typeof value !== "object" || Array.isArray(value)) {
+		throw new Error("fields must be an object");
+	}
+
+	const entries = Object.entries(value).map(([key, fieldValue]) => {
+		if (typeof fieldValue === "string") {
+			return [key, fieldValue] as const;
+		}
+
+		if (typeof fieldValue === "number" || typeof fieldValue === "boolean") {
+			return [key, String(fieldValue)] as const;
+		}
+
+		throw new Error(`Field '${key}' must be a string, number, or boolean`);
+	});
+
+	if (entries.length === 0) {
+		throw new Error("fields must include at least one field");
+	}
+
+	return Object.fromEntries(entries);
+};
+
+const parseStringRecord = (value: Record<string, unknown>): Record<string, string> =>
+	Object.fromEntries(
+		Object.entries(value).map(([key, fieldValue]) => {
+			if (typeof fieldValue === "string") {
+				return [key, fieldValue] as const;
+			}
+
+			if (typeof fieldValue === "number" || typeof fieldValue === "boolean") {
+				return [key, String(fieldValue)] as const;
+			}
+
+			throw new Error(`Field '${key}' must be a string, number, or boolean`);
+		})
+	);
+
+const parseNoteInput = (value: unknown, index?: number): NoteInput => {
+	const label = index === undefined ? "note" : `notes[${index}]`;
+	if (!value || typeof value !== "object" || Array.isArray(value)) {
+		throw new Error(`${label} must be an object`);
+	}
+
+	const data = value as Record<string, unknown>;
+	return {
+		type: requireString(data.type, `${label}.type`),
+		deck: requireString(data.deck, `${label}.deck`),
+		fields: parseFields(data.fields),
+		tags: parseTags(data.tags),
+	};
+};
+
+const normalizeFields = (
+	modelName: string,
+	modelFields: string[],
+	inputFields: Record<string, string>
+): Record<string, string> => {
+	const allowedNames = new Set([
+		...modelFields,
+		...modelFields.map((field) => field.toLowerCase()),
+	]);
+	const unknownFields = Object.keys(inputFields).filter((field) => !allowedNames.has(field));
+
+	if (unknownFields.length > 0) {
+		throw new Error(
+			`Unknown field(s) for '${modelName}': ${unknownFields.join(", ")}. Valid fields: ${modelFields.join(", ")}`
+		);
+	}
+
+	return Object.fromEntries(
+		modelFields.map((field) => [
+			field,
+			inputFields[field] ?? inputFields[field.toLowerCase()] ?? "",
+		])
+	);
+};
+
+/**
+ * Handles all MCP tool operations for Anki.
+ */
+export class McpToolHandler {
+	private readonly ankiClient: AnkiClient;
+	private readonly onCatalogChanged?: () => void;
+
+	constructor(ankiClient?: AnkiClient, onCatalogChanged?: () => void) {
+		this.ankiClient = ankiClient ?? new AnkiClient();
+		this.onCatalogChanged = onCatalogChanged;
+	}
+
+	async getToolSchema(): Promise<ListToolsResult> {
+		return { tools: TOOLS };
+	}
+
+	async executeTool(name: string, args: Record<string, unknown>): Promise<CallToolResult> {
 		try {
-			// biome-ignore lint/suspicious/noExplicitAny: MCP args are untyped at the protocol level; each handler validates its own input
-			const a = args as any;
-			switch (name) {
-				// Deck tools
-				case "list_decks":
-					return this.listDecks();
-				case "create_deck":
-					return this.createDeck(a);
+			const toolName = LEGACY_TOOL_ALIASES[name] ?? name;
 
-				// Sync
-				case "sync":
-					return this.sync();
-
-				// Note type tools
-				case "list_note_types":
-					return this.listNoteTypes();
-				case "create_note_type":
-					return this.createNoteType(a);
-				case "get_note_type_info":
-					return this.getNoteTypeInfo(a);
-
-				// Note tools
-				case "create_note":
-					return this.createNote(a);
-				case "batch_create_notes":
-					return this.batchCreateNotes(a);
-				case "search_notes":
-					return this.searchNotes(a);
-				case "get_note_info":
-					return this.getNoteInfo(a);
-				case "update_note":
-					return this.updateNote(a);
-				case "delete_note":
-					return this.deleteNote(a);
-
-				// Dynamic model-specific note creation
+			switch (toolName) {
+				case "anki_check_connection":
+					return await this.checkConnection();
+				case "anki_list_decks":
+					return await this.listDecks();
+				case "anki_sync":
+					return await this.sync();
+				case "anki_create_deck":
+					return await this.createDeck(args);
+				case "anki_list_note_types":
+					return await this.listNoteTypes();
+				case "anki_get_note_type_info":
+					return await this.getNoteTypeInfo(args);
+				case "anki_create_note":
+					return await this.createNote(args);
+				case "anki_batch_create_notes":
+					return await this.batchCreateNotes(args);
+				case "anki_search_notes":
+					return await this.searchNotes(args);
+				case "anki_get_note_info":
+					return await this.getNoteInfo(args);
+				case "anki_update_note":
+					return await this.updateNote(args);
+				case "anki_delete_note":
+					return await this.deleteNote(args);
+				case "anki_create_note_type":
+					return await this.createNoteType(args);
 				default: {
-					const typeToolMatch = name.match(/^create_(.+)_note$/);
-					if (typeToolMatch) {
-						const modelName = typeToolMatch[1].replace(/_/g, " ");
-						return this.createModelSpecificNote(modelName, args);
+					const modelName = this.resolveDynamicModelName(name);
+					if (modelName) {
+						return await this.createModelSpecificNote(modelName, args);
 					}
 
 					throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
@@ -392,636 +774,366 @@ export class McpToolHandler {
 				throw error;
 			}
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: `Error: ${error instanceof Error ? error.message : String(error)}`,
-					},
-				],
-				isError: true,
-			};
+			return errorResult(error);
 		}
 	}
 
-	/**
-	 * Trigger an AnkiWeb sync. Fire-and-forget — see AnkiClient.sync().
-	 */
-	private async sync(): Promise<{
-		content: {
-			type: string;
-			text: string;
-		}[];
-	}> {
+	private resolveDynamicModelName(name: string): string | null {
+		const match = name.match(/^create_(.+)_note$/) ?? name.match(/^anki_create_(.+)_note$/);
+		return match ? match[1].replace(/_/g, " ") : null;
+	}
+
+	private async checkConnection(): Promise<CallToolResult> {
+		const version = await this.ankiClient.getVersion();
+		return result({ connected: true, version });
+	}
+
+	private async sync(): Promise<CallToolResult> {
 		await this.ankiClient.sync();
-		return {
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(
-						{
-							success: true,
-							message:
-								"Sync requested. AnkiConnect does not confirm completion; if changes don't appear on AnkiWeb, check Anki for a pending dialog.",
-						},
-						null,
-						2
-					),
-				},
-			],
-		};
+		return result({
+			success: true,
+			message:
+				"Sync requested. AnkiConnect does not confirm completion; check Anki for pending dialogs if changes do not appear on AnkiWeb.",
+		});
 	}
 
-	/**
-	 * List all decks
-	 */
-	private async listDecks(): Promise<{
-		content: {
-			type: string;
-			text: string;
-		}[];
-	}> {
+	private async listDecks(): Promise<CallToolResult> {
 		const decks = await this.ankiClient.getDeckNames();
-		return {
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify({ decks, count: decks.length }, null, 2),
-				},
-			],
-		};
+		return result({ decks, count: decks.length });
 	}
 
-	/**
-	 * Create a new deck
-	 */
-	private async createDeck(args: { name: string }): Promise<{
-		content: {
-			type: string;
-			text: string;
-		}[];
-	}> {
-		if (!args.name) {
-			throw new McpError(ErrorCode.InvalidParams, "Deck name is required");
-		}
-
-		const deckId = await this.ankiClient.createDeck(args.name);
-		return {
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify({ deckId, name: args.name }, null, 2),
-				},
-			],
-		};
+	private async createDeck(args: Record<string, unknown>): Promise<CallToolResult> {
+		const name = requireString(args.name, "name");
+		const deckId = await this.ankiClient.createDeck(name);
+		return result({ deckId, name });
 	}
 
-	/**
-	 * List all note types
-	 */
-	private async listNoteTypes(): Promise<{
-		content: {
-			type: string;
-			text: string;
-		}[];
-	}> {
+	private async listNoteTypes(): Promise<CallToolResult> {
 		const noteTypes = await this.ankiClient.getModelNames();
-		return {
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify({ noteTypes, count: noteTypes.length }, null, 2),
-				},
-			],
-		};
+		return result({ noteTypes, count: noteTypes.length });
 	}
 
-	/**
-	 * Create a new note type
-	 */
-	private async createNoteType(args: {
-		name: string;
-		fields: string[];
-		css?: string;
-		templates: {
-			name: string;
-			front: string;
-			back: string;
-		}[];
-	}): Promise<{
-		content: {
-			type: string;
-			text: string;
-		}[];
-	}> {
-		if (!args.name) {
-			throw new McpError(ErrorCode.InvalidParams, "Note type name is required");
-		}
+	private async createNoteType(args: Record<string, unknown>): Promise<CallToolResult> {
+		const name = requireString(args.name, "name");
+		const fields = requireStringArray(args.fields, "fields");
+		const css = args.css === undefined ? "" : String(args.css);
+		const templates = this.parseTemplates(args.templates);
 
-		if (!args.fields || args.fields.length === 0) {
-			throw new McpError(ErrorCode.InvalidParams, "Fields are required");
-		}
-
-		if (!args.templates || args.templates.length === 0) {
-			throw new McpError(ErrorCode.InvalidParams, "Templates are required");
-		}
-
-		// Check if model already exists
 		const existingModels = await this.ankiClient.getModelNames();
-		if (existingModels.includes(args.name)) {
-			throw new McpError(ErrorCode.InvalidParams, `Note type already exists: ${args.name}`);
+		if (existingModels.includes(name)) {
+			throw new Error(`Note type already exists: ${name}`);
 		}
 
 		await this.ankiClient.createModel({
-			modelName: args.name,
-			inOrderFields: args.fields,
-			css: args.css || "",
-			cardTemplates: args.templates,
+			modelName: name,
+			inOrderFields: fields,
+			css,
+			cardTemplates: templates,
 		});
+		this.onCatalogChanged?.();
 
-		return {
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(
-						{
-							success: true,
-							modelName: args.name,
-							fields: args.fields,
-							templates: args.templates.length,
-						},
-						null,
-						2
-					),
-				},
-			],
-		};
+		return result({
+			success: true,
+			modelName: name,
+			fields,
+			templates: templates.length,
+		});
 	}
 
-	/**
-	 * Get note type info
-	 */
-	private async getNoteTypeInfo(args: { modelName: string; includeCss?: boolean }): Promise<{
-		content: {
-			type: string;
-			text: string;
-		}[];
-	}> {
-		if (!args.modelName) {
-			throw new McpError(ErrorCode.InvalidParams, "Model name is required");
+	private parseTemplates(value: unknown): { name: string; front: string; back: string }[] {
+		if (!Array.isArray(value) || value.length === 0) {
+			throw new Error("templates must be a non-empty array");
 		}
 
-		// Check if model exists
-		const existingModels = await this.ankiClient.getModelNames();
-		if (!existingModels.includes(args.modelName)) {
-			throw new McpError(ErrorCode.InvalidParams, `Note type not found: ${args.modelName}`);
-		}
+		return value.map((template, index) => {
+			if (!template || typeof template !== "object" || Array.isArray(template)) {
+				throw new Error(`templates[${index}] must be an object`);
+			}
 
-		// Get model information in parallel
+			const data = template as Record<string, unknown>;
+			return {
+				name: requireString(data.name, `templates[${index}].name`),
+				front: requireString(data.front, `templates[${index}].front`),
+				back: requireString(data.back, `templates[${index}].back`),
+			};
+		});
+	}
+
+	private async getNoteTypeInfo(args: Record<string, unknown>): Promise<CallToolResult> {
+		const modelName = requireString(args.modelName, "modelName");
+		const includeCss = optionalBoolean(args.includeCss, false);
+		await this.requireModel(modelName);
+
 		const [fields, templates] = await Promise.all([
-			this.ankiClient.getModelFieldNames(args.modelName),
-			this.ankiClient.getModelTemplates(args.modelName),
+			this.ankiClient.getModelFieldNames(modelName),
+			this.ankiClient.getModelTemplates(modelName),
 		]);
 
-		const result: {
-			modelName: string;
-			fields: string[];
-			templates: Record<string, { Front: string; Back: string }>;
-			css?: string;
-		} = {
-			modelName: args.modelName,
+		if (!includeCss) {
+			return result({ modelName, fields, templates });
+		}
+
+		const styling = await this.ankiClient.getModelStyling(modelName);
+		return result({ modelName, fields, templates, css: styling.css });
+	}
+
+	private async createNote(args: Record<string, unknown>): Promise<CallToolResult> {
+		const note = parseNoteInput(args);
+		const allowDuplicate = optionalBoolean(args.allowDuplicate, false);
+		const modelFields = await this.prepareDeckAndModel(note.deck, note.type);
+		const fields = normalizeFields(note.type, modelFields, note.fields);
+		const payload = {
+			deckName: note.deck,
+			modelName: note.type,
 			fields,
-			templates,
+			tags: note.tags,
+			options: { allowDuplicate },
 		};
 
-		if (args.includeCss) {
-			const styling = await this.ankiClient.getModelStyling(args.modelName);
-			result.css = styling.css;
+		await this.requireCanAddNote(payload);
+		const noteId = await this.ankiClient.addNote(payload);
+		if (noteId === null) {
+			throw new Error("Anki rejected note creation without returning a note ID.");
 		}
 
-		return {
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(result, null, 2),
-				},
-			],
-		};
+		return result({ noteId, deck: note.deck, modelName: note.type });
 	}
 
-	/**
-	 * Create a new note
-	 */
-	private async createNote(args: {
-		type: string;
-		deck: string;
-		fields: Record<string, string>;
-		allowDuplicate?: boolean;
-		tags?: string[];
-	}): Promise<{
-		content: {
-			type: string;
-			text: string;
-		}[];
-	}> {
-		if (!args.type) {
-			throw new McpError(ErrorCode.InvalidParams, "Note type is required");
-		}
-
-		if (!args.deck) {
-			throw new McpError(ErrorCode.InvalidParams, "Deck name is required");
-		}
-
-		if (!args.fields || Object.keys(args.fields).length === 0) {
-			throw new McpError(ErrorCode.InvalidParams, "Fields are required");
-		}
-
-		// Check if deck exists, create if not
-		const decks = await this.ankiClient.getDeckNames();
-		if (!decks.includes(args.deck)) {
-			await this.ankiClient.createDeck(args.deck);
-		}
-
-		// Check if model exists
-		const models = await this.ankiClient.getModelNames();
-		if (!models.includes(args.type)) {
-			throw new McpError(ErrorCode.InvalidParams, `Note type not found: ${args.type}`);
-		}
-
-		// Normalize field names to match the model
-		const modelFields = await this.ankiClient.getModelFieldNames(args.type);
-		const normalizedFields: Record<string, string> = {};
-		for (const field of modelFields) {
-			normalizedFields[field] = args.fields[field] || args.fields[field.toLowerCase()] || "";
-		}
-
-		const noteId = await this.ankiClient.addNote({
-			deckName: args.deck,
-			modelName: args.type,
-			fields: normalizedFields,
-			tags: args.tags || [],
-			options: {
-				allowDuplicate: args.allowDuplicate || false,
-			},
-		});
-
-		return {
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(
-						{
-							noteId,
-							deck: args.deck,
-							modelName: args.type,
-						},
-						null,
-						2
-					),
-				},
-			],
-		};
-	}
-
-	/**
-	 * Create a model-specific note
-	 */
 	private async createModelSpecificNote(
 		modelName: string,
 		args: Record<string, unknown>
-	): Promise<{
-		content: {
-			type: string;
-			text: string;
-		}[];
-	}> {
-		if (!args.deck) {
-			throw new McpError(ErrorCode.InvalidParams, "Deck name is required");
+	): Promise<CallToolResult> {
+		const deck = requireString(args.deck, "deck");
+		const tags = parseTags(args.tags);
+		const modelFields = await this.prepareDeckAndModel(deck, modelName);
+		const fieldArgs = Object.fromEntries(
+			Object.entries(args).filter(([key]) => key !== "deck" && key !== "tags")
+		);
+		const fields = normalizeFields(modelName, modelFields, parseStringRecord(fieldArgs));
+		const payload = { deckName: deck, modelName, fields, tags };
+
+		await this.requireCanAddNote(payload);
+		const noteId = await this.ankiClient.addNote(payload);
+		if (noteId === null) {
+			throw new Error("Anki rejected note creation without returning a note ID.");
 		}
 
-		// Check if model exists
-		const models = await this.ankiClient.getModelNames();
-		if (!models.includes(modelName)) {
-			throw new McpError(ErrorCode.InvalidParams, `Note type not found: ${modelName}`);
-		}
-
-		// Check if deck exists, create if not
-		const deckName = args.deck as string;
-		const decks = await this.ankiClient.getDeckNames();
-		if (!decks.includes(deckName)) {
-			await this.ankiClient.createDeck(deckName);
-		}
-
-		// Get model fields
-		const modelFields = await this.ankiClient.getModelFieldNames(modelName);
-
-		// Normalize fields: all fields can be empty
-		const fields: Record<string, string> = {};
-		for (const field of modelFields) {
-			fields[field] = String(args[field.toLowerCase()] ?? args[field] ?? "");
-		}
-
-		// Extract tags if provided
-		const tags = Array.isArray(args.tags) ? (args.tags as string[]) : [];
-
-		const noteId = await this.ankiClient.addNote({
-			deckName: deckName,
-			modelName: modelName,
-			fields,
-			tags,
-		});
-
-		return {
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(
-						{
-							noteId,
-							deck: deckName,
-							modelName,
-						},
-						null,
-						2
-					),
-				},
-			],
-		};
+		return result({ noteId, deck, modelName });
 	}
 
-	/**
-	 * Create multiple notes at once
-	 */
-	private async batchCreateNotes(args: {
-		notes: {
-			type: string;
-			deck: string;
-			fields: Record<string, string>;
-			tags?: string[];
-		}[];
-		allowDuplicate?: boolean;
-		stopOnError?: boolean;
-	}): Promise<{
-		content: {
-			type: string;
-			text: string;
-		}[];
-	}> {
-		if (!args.notes || !Array.isArray(args.notes) || args.notes.length === 0) {
-			throw new McpError(ErrorCode.InvalidParams, "Notes array is required");
+	private async batchCreateNotes(args: Record<string, unknown>): Promise<CallToolResult> {
+		if (!Array.isArray(args.notes) || args.notes.length === 0) {
+			throw new Error("notes must be a non-empty array");
 		}
 
-		const results: {
-			success: boolean;
-			noteId?: number | null;
-			error?: string;
-			index: number;
-		}[] = [];
+		if (args.notes.length > 50) {
+			throw new Error("notes cannot contain more than 50 items");
+		}
 
-		const stopOnError = args.stopOnError === true;
+		const notes = args.notes.map((note, index) => parseNoteInput(note, index));
+		const allowDuplicate = optionalBoolean(args.allowDuplicate, false);
+		const stopOnError = optionalBoolean(args.stopOnError, false);
+		const knownDecks = new Set(await this.ankiClient.getDeckNames());
+		const knownModels = new Set(await this.ankiClient.getModelNames());
+		const fieldsCache = new Map<string, string[]>();
+		let results: BatchNoteResult[] = [];
 
-		// Process each note
-		for (let i = 0; i < args.notes.length; i++) {
-			const note = args.notes[i];
+		for (let index = 0; index < notes.length; index++) {
 			try {
-				// Check if deck exists, create if not
-				const decks = await this.ankiClient.getDeckNames();
-				if (!decks.includes(note.deck)) {
-					await this.ankiClient.createDeck(note.deck);
-				}
-
-				// Check if model exists
-				const models = await this.ankiClient.getModelNames();
-				if (!models.includes(note.type)) {
+				const note = notes[index];
+				if (!knownModels.has(note.type)) {
 					throw new Error(`Note type not found: ${note.type}`);
 				}
 
-				// Get model fields
-				const modelFields = await this.ankiClient.getModelFieldNames(note.type);
-
-				// Normalize field names to match the model, all fields can be empty
-				const normalizedFields: Record<string, string> = {};
-				for (const field of modelFields) {
-					normalizedFields[field] = note.fields[field] || note.fields[field.toLowerCase()] || "";
+				if (!knownDecks.has(note.deck)) {
+					await this.ankiClient.createDeck(note.deck);
+					knownDecks.add(note.deck);
 				}
 
-				const noteId = await this.ankiClient.addNote({
+				const modelFields = await this.getCachedModelFields(note.type, fieldsCache);
+				const fields = normalizeFields(note.type, modelFields, note.fields);
+				const payload = {
 					deckName: note.deck,
 					modelName: note.type,
-					fields: normalizedFields,
-					tags: note.tags || [],
-					options: {
-						allowDuplicate: args.allowDuplicate || false,
-					},
-				});
+					fields,
+					tags: note.tags,
+					options: { allowDuplicate },
+				};
 
-				results.push({
-					success: true,
-					noteId,
-					index: i,
-				});
+				await this.requireCanAddNote(payload);
+				const noteId = await this.ankiClient.addNote(payload);
+				if (noteId === null) {
+					throw new Error("Anki rejected note creation without returning a note ID.");
+				}
+
+				results = [...results, { success: true, noteId, index }];
 			} catch (error) {
-				results.push({
-					success: false,
-					error: error instanceof Error ? error.message : String(error),
-					index: i,
-				});
-
+				results = [...results, { success: false, error: errorMessage(error), index }];
 				if (stopOnError) {
 					break;
 				}
 			}
 		}
 
-		return {
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(
-						{
-							results,
-							total: args.notes.length,
-							successful: results.filter((r) => r.success).length,
-							failed: results.filter((r) => !r.success).length,
-						},
-						null,
-						2
-					),
-				},
-			],
-		};
+		const successful = results.filter((item) => item.success).length;
+		const failed = results.filter((item) => !item.success).length;
+		return result(
+			{
+				results,
+				total: notes.length,
+				successful,
+				failed,
+			},
+			{ isError: failed > 0 }
+		);
 	}
 
-	/**
-	 * Search for notes
-	 */
-	private async searchNotes(args: { query: string }): Promise<{
-		content: {
-			type: string;
-			text: string;
-		}[];
-	}> {
-		if (!args.query) {
-			throw new McpError(ErrorCode.InvalidParams, "Search query is required");
-		}
+	private async searchNotes(args: Record<string, unknown>): Promise<CallToolResult> {
+		const query = requireString(args.query, "query");
+		const limit = optionalInteger(args.limit, "limit", 20, 1, 100);
+		const offset = optionalInteger(args.offset, "offset", 0, 0);
+		const noteIds = await this.ankiClient.findNotes(query);
+		const selectedIds = noteIds.slice(offset, offset + limit);
+		const notes = selectedIds.length > 0 ? await this.ankiClient.notesInfo(selectedIds) : [];
+		const nextOffset = offset + notes.length;
+		const hasMore = nextOffset < noteIds.length;
 
-		const noteIds = await this.ankiClient.findNotes(args.query);
-
-		let notes: {
-			noteId: number;
-			modelName: string;
-			tags: string[];
-			fields: Record<string, { value: string; order: number }>;
-		}[] = [];
-		if (noteIds.length > 0) {
-			// Get detailed info for the first 50 notes
-			const limit = Math.min(noteIds.length, 50);
-			const notesInfo = await this.ankiClient.notesInfo(noteIds.slice(0, limit));
-			notes = notesInfo;
-		}
-
-		return {
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(
-						{
-							query: args.query,
-							total: noteIds.length,
-							notes,
-							limitApplied: noteIds.length > 50,
-						},
-						null,
-						2
-					),
-				},
-			],
-		};
-	}
-
-	/**
-	 * Get note info
-	 */
-	private async getNoteInfo(args: { noteId: number }): Promise<{
-		content: {
-			type: string;
-			text: string;
-		}[];
-	}> {
-		if (!args.noteId) {
-			throw new McpError(ErrorCode.InvalidParams, "Note ID is required");
-		}
-
-		const notesInfo = await this.ankiClient.notesInfo([args.noteId]);
-
-		if (!notesInfo || notesInfo.length === 0) {
-			throw new McpError(ErrorCode.InvalidParams, `Note not found: ${args.noteId}`);
-		}
-
-		return {
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(notesInfo[0], null, 2),
-				},
-			],
-		};
-	}
-
-	/**
-	 * Update a note
-	 */
-	private async updateNote(args: {
-		id: number;
-		fields: Record<string, string>;
-		tags?: string[];
-	}): Promise<{
-		content: {
-			type: string;
-			text: string;
-		}[];
-	}> {
-		if (!args.id) {
-			throw new McpError(ErrorCode.InvalidParams, "Note ID is required");
-		}
-
-		if (!args.fields || Object.keys(args.fields).length === 0) {
-			throw new McpError(ErrorCode.InvalidParams, "Fields are required");
-		}
-
-		// Check if note exists
-		const notesInfo = await this.ankiClient.notesInfo([args.id]);
-
-		if (!notesInfo || notesInfo.length === 0) {
-			throw new McpError(ErrorCode.InvalidParams, `Note not found: ${args.id}`);
-		}
-
-		// Update fields
-		await this.ankiClient.updateNoteFields({
-			id: args.id,
-			fields: args.fields,
+		return result({
+			query,
+			total: noteIds.length,
+			offset,
+			limit,
+			notes,
+			hasMore,
+			...(hasMore ? { nextOffset } : {}),
 		});
-
-		return {
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(
-						{
-							success: true,
-							noteId: args.id,
-						},
-						null,
-						2
-					),
-				},
-			],
-		};
 	}
 
-	/**
-	 * Delete one or multiple notes
-	 */
-	private async deleteNote(args: { noteId?: number; noteIds?: number[] }): Promise<{
-		content: {
-			type: string;
-			text: string;
-		}[];
-	}> {
+	private async getNoteInfo(args: Record<string, unknown>): Promise<CallToolResult> {
+		const noteId = requirePositiveInteger(args.noteId, "noteId");
+		const note = await this.requireNote(noteId);
+		return result(note as unknown as Record<string, unknown>);
+	}
+
+	private async updateNote(args: Record<string, unknown>): Promise<CallToolResult> {
+		const id = requirePositiveInteger(args.id, "id");
+		const fields = args.fields === undefined ? undefined : parseFields(args.fields);
+		const tags = args.tags === undefined ? undefined : parseTags(args.tags);
+
+		if (fields === undefined && tags === undefined) {
+			throw new Error("Provide fields and/or tags to update");
+		}
+
+		await this.requireNote(id);
+
+		if (fields !== undefined) {
+			await this.ankiClient.updateNoteFields({ id, fields });
+		}
+
+		if (tags !== undefined) {
+			await this.ankiClient.updateNoteTags({ id, tags });
+		}
+
+		return result({
+			success: true,
+			noteId: id,
+			updatedFields: fields !== undefined,
+			updatedTags: tags !== undefined,
+		});
+	}
+
+	private async deleteNote(args: Record<string, unknown>): Promise<CallToolResult> {
 		const hasNoteId = args.noteId !== undefined;
 		const hasNoteIds = args.noteIds !== undefined;
 
 		if (hasNoteId === hasNoteIds) {
-			throw new McpError(ErrorCode.InvalidParams, "Provide exactly one of noteId or noteIds");
+			throw new Error("Provide exactly one of noteId or noteIds");
 		}
 
-		const noteIds: number[] = hasNoteId ? [args.noteId as number] : (args.noteIds ?? []);
-
-		if (noteIds.length === 0) {
-			throw new McpError(ErrorCode.InvalidParams, "At least one note ID is required");
-		}
-
-		if (noteIds.some((id) => !Number.isInteger(id) || id <= 0)) {
-			throw new McpError(ErrorCode.InvalidParams, "All note IDs must be positive integers");
-		}
+		const noteIds = hasNoteId
+			? [requirePositiveInteger(args.noteId, "noteId")]
+			: this.parseNoteIds(args.noteIds);
 
 		await this.ankiClient.deleteNotes(noteIds);
+		return result({
+			success: true,
+			deletedCount: noteIds.length,
+			noteIds,
+		});
+	}
 
-		return {
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(
-						{
-							success: true,
-							deletedCount: noteIds.length,
-							noteIds,
-						},
-						null,
-						2
-					),
-				},
-			],
-		};
+	private parseNoteIds(value: unknown): number[] {
+		if (!Array.isArray(value) || value.length === 0) {
+			throw new Error("noteIds must be a non-empty array");
+		}
+
+		return value.map((id, index) => requirePositiveInteger(id, `noteIds[${index}]`));
+	}
+
+	private async prepareDeckAndModel(deckName: string, modelName: string): Promise<string[]> {
+		const [decks, modelFields] = await Promise.all([
+			this.ankiClient.getDeckNames(),
+			this.getModelFields(modelName),
+		]);
+
+		if (!decks.includes(deckName)) {
+			await this.ankiClient.createDeck(deckName);
+		}
+
+		return modelFields;
+	}
+
+	private async requireModel(modelName: string): Promise<void> {
+		const models = await this.ankiClient.getModelNames();
+		if (!models.includes(modelName)) {
+			throw new Error(`Note type not found: ${modelName}`);
+		}
+	}
+
+	private async getModelFields(
+		modelName: string,
+		cache?: Map<string, string[]>
+	): Promise<string[]> {
+		await this.requireModel(modelName);
+		return this.getCachedModelFields(modelName, cache);
+	}
+
+	private async getCachedModelFields(
+		modelName: string,
+		cache?: Map<string, string[]>
+	): Promise<string[]> {
+		const cached = cache?.get(modelName);
+		if (cached) {
+			return cached;
+		}
+
+		const fields = await this.ankiClient.getModelFieldNames(modelName);
+		cache?.set(modelName, fields);
+		return fields;
+	}
+
+	private async requireCanAddNote(note: {
+		deckName: string;
+		modelName: string;
+		fields: Record<string, string>;
+		tags?: string[];
+		options?: { allowDuplicate?: boolean };
+	}): Promise<void> {
+		const [check] = await this.ankiClient.canAddNotesWithErrorDetail([note]);
+		if (!check?.canAdd) {
+			throw new Error(
+				`Cannot create note: ${check && "error" in check ? check.error : "Anki rejected the note"}`
+			);
+		}
+	}
+
+	private async requireNote(noteId: number): Promise<AnkiNoteInfo> {
+		const notes = await this.ankiClient.notesInfo([noteId]);
+		const note = notes[0];
+		if (!note) {
+			throw new Error(`Note not found: ${noteId}`);
+		}
+
+		return note;
 	}
 }

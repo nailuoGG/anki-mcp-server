@@ -33,8 +33,6 @@ export class McpResourceHandler {
 			mimeType?: string;
 		}[];
 	}> {
-		await this.ankiClient.checkConnection();
-
 		return {
 			resources: [
 				{
@@ -58,8 +56,6 @@ export class McpResourceHandler {
 			mimeType?: string;
 		}[];
 	}> {
-		await this.ankiClient.checkConnection();
-
 		return {
 			resourceTemplates: [
 				{
@@ -177,7 +173,10 @@ export class McpResourceHandler {
 									fields: schema.fields,
 									templates: schema.templates,
 									css: schema.css,
-									createTool: `create_${modelName.replace(/\s+/g, "_")}_note`,
+									createTool: "anki_create_note",
+									createToolDefaults: {
+										type: schema.modelName,
+									},
 								},
 								null,
 								2

@@ -52,7 +52,7 @@ export class AnkiMcpServer {
 			ankiConnectUrl: `http://${host}:${port}`,
 		});
 		this.resourceHandler = new McpResourceHandler(this.ankiClient);
-		this.toolHandler = new McpToolHandler(this.ankiClient);
+		this.toolHandler = new McpToolHandler(this.ankiClient, () => this.resourceHandler.clearCache());
 
 		this.setupHandlers();
 
@@ -69,12 +69,10 @@ export class AnkiMcpServer {
 	private setupHandlers(): void {
 		// Resource handlers
 		this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
-			await this.checkConnection();
 			return this.resourceHandler.listResources();
 		});
 
 		this.server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
-			await this.checkConnection();
 			return this.resourceHandler.listResourceTemplates();
 		});
 
@@ -85,12 +83,10 @@ export class AnkiMcpServer {
 
 		// Tool handlers
 		this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-			await this.checkConnection();
 			return this.toolHandler.getToolSchema();
 		});
 
 		this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-			await this.checkConnection();
 			return this.toolHandler.executeTool(request.params.name, request.params.arguments ?? {});
 		});
 	}
