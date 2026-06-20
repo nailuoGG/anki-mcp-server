@@ -1,7 +1,7 @@
 /**
  * Utility functions and anti-corruption layer for yanki-connect
  */
-import { YankiConnect } from "yanki-connect";
+import { YankiConnect, type YankiFetchAdapter } from "yanki-connect";
 import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 
 /**
@@ -40,6 +40,7 @@ export interface AnkiConfig {
 	timeout: number;
 	retryTimeout: number;
 	defaultDeck: string;
+	fetchAdapter?: YankiFetchAdapter;
 }
 
 /**
@@ -74,7 +75,38 @@ export class AnkiClient {
 		this.client = new YankiConnect({
 			host: `${url.protocol}//${url.hostname}`,
 			port: parseInt(url.port, 10),
+			fetchAdapter: this.createTimeoutFetchAdapter(),
 		});
+	}
+
+	private createTimeoutFetchAdapter(): YankiFetchAdapter {
+		const fetchAdapter = this.config.fetchAdapter ?? (fetch.bind(globalThis) as YankiFetchAdapter);
+
+		return async (input, init) => {
+			if (this.config.timeout <= 0) {
+				return fetchAdapter(input, init);
+			}
+
+			const controller = new AbortController();
+			const timeout = setTimeout(() => controller.abort(), this.config.timeout);
+
+			try {
+				return await fetchAdapter(input, {
+					...init,
+					signal: controller.signal,
+				} as Parameters<YankiFetchAdapter>[1] & { signal: AbortSignal });
+			} catch (error) {
+				if (error instanceof Error && error.name === "AbortError") {
+					throw new AnkiTimeoutError(
+						"Connection to Anki timed out. Please check if Anki is responsive."
+					);
+				}
+
+				throw error;
+			} finally {
+				clearTimeout(timeout);
+			}
+		};
 	}
 
 	/**
@@ -115,6 +147,10 @@ export class AnkiClient {
 	 */
 	private normalizeError(error: unknown): Error {
 		if (error instanceof Error) {
+			if (error instanceof AnkiTimeoutError) {
+				return error;
+			}
+
 			// Connection errors
 			if (error.message.includes("ECONNREFUSED")) {
 				return new AnkiConnectionError(
@@ -123,7 +159,11 @@ export class AnkiClient {
 			}
 
 			// Timeout errors
-			if (error.message.includes("timeout") || error.message.includes("ETIMEDOUT")) {
+			if (
+				error.name === "AbortError" ||
+				error.message.includes("timeout") ||
+				error.message.includes("ETIMEDOUT")
+			) {
 				return new AnkiTimeoutError(
 					"Connection to Anki timed out. Please check if Anki is responsive."
 				);
