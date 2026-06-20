@@ -1,0 +1,30 @@
+src/mcpNoteTools.ts
+  s_999832efc3652f::t_4f29d7b15112ab 12,20-31,106-107,110-115,129-134,137,146-212,214-236,238,240,242-251,254-272,274-289
+  s_999832efc3652f::t_248cfdbcd2c820 40,138-145
+  s_999832efc3652f::t_22021fd016cdf3 32-39,41,135-136,213,237,239,241,252-253,273
+  s_999832efc3652f::t_5bf23ca48e3a54 121
+src/utils.ts
+  s_999832efc3652f::t_86612cc6eee696 383-385,387,389,397,403-404
+  s_999832efc3652f::t_03c352304df52f 57-65
+src/index.test.ts
+  s_999832efc3652f::t_4d667927a07c3b 253-292
+  s_999832efc3652f::t_0b55f5833de350 50,215-218,221-222,237
+src/mcpProtocol.test.ts
+  s_999832efc3652f::t_9c65fb557a3812 51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "20be3f17e942eedb49a2729d424fe40e81201ca9",
+  "prompts": {},
+  "sessions": {
+    "s_999832efc3652f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ee517-0633-7261-92d2-bc5f67d46a82",
+        "model": "gpt-5.5"
+      },
+      "human_author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
