@@ -1,0 +1,29 @@
+CHANGELOG.md
+  s_9d8f7bceb2e77d::t_f34f6cbe3012e1 11-13,25-26
+package.json
+  s_9d8f7bceb2e77d::t_a5cf2d98384407 30-31
+README.md
+  s_9d8f7bceb2e77d::t_f34f6cbe3012e1 18,246-255
+src/mcpTools.ts
+  s_9d8f7bceb2e77d::t_f34f6cbe3012e1 253,259-266,269-270,983,991-994,996-997,999,1001-1004,1008,1017-1018
+  s_9d8f7bceb2e77d::t_9a8b9b78cbe86b 998,1000
+  s_9d8f7bceb2e77d::t_cd46e5cc751a2a 985,995,1005
+src/index.test.ts
+  s_9d8f7bceb2e77d::t_f34f6cbe3012e1 1-30,58-101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "1e1596bc52a61efcff1d340f6f3088d15a851de8",
+  "prompts": {},
+  "sessions": {
+    "s_9d8f7bceb2e77d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ee4ec-0d56-7630-b14f-58ccf78d94a1",
+        "model": "gpt-5.5"
+      },
+      "human_author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
