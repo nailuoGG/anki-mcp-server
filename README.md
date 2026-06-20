@@ -207,6 +207,10 @@ npm test
 
 This executes unit tests for MCP tool schemas, structured tool results, note creation, search/update/delete workflows, and error handling. These tests use mocked AnkiConnect clients; use MCP Inspector with a running Anki instance for manual integration checks.
 
+### MCP Evaluations
+
+Read-only agent evaluation assets live in `evals/`. Load the fixture into a disposable Anki profile, then run the XML questions against the MCP server to verify that agents can discover decks, tags, note type schemas, resources, and structured tool results.
+
 ### Debugging
 
 Since MCP servers communicate over stdio, we recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector):
