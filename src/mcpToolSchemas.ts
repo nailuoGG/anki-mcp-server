@@ -197,7 +197,8 @@ export const TOOLS: Tool[] = [
 	{
 		name: "anki_add_note_tags",
 		title: "Add Tags To Anki Notes",
-		description: "Add one or more tags to a single note or multiple notes.",
+		description:
+			"Use when the user wants to add one or more tags to existing notes for organization. Do not use when the user wants to remove tags (use anki_remove_note_tags) or update note content (use anki_update_note). Safety: confirm before adding tags to a large number of notes.",
 		inputSchema: inputSchema({
 			type: "object",
 			properties: {
@@ -240,7 +241,8 @@ export const TOOLS: Tool[] = [
 	{
 		name: "anki_remove_note_tags",
 		title: "Remove Tags From Anki Notes",
-		description: "Remove one or more tags from a single note or multiple notes.",
+		description:
+			"Use when the user wants to remove specific tags from one or more existing notes. Do not use when the user wants to add tags (use anki_add_note_tags) or clear all tags (use anki_update_note with an empty tags array). Safety: confirm with the user before removing tags, as this modifies note metadata.",
 		inputSchema: inputSchema({
 			type: "object",
 			properties: {
@@ -302,7 +304,7 @@ export const TOOLS: Tool[] = [
 		name: "anki_get_note_type_info",
 		title: "Get Anki Note Type Info",
 		description:
-			"Get fields and card templates for a note type. Call this before creating notes for a custom model.",
+			"Use when inspecting a note type before creating or updating notes, especially for non-standard models. Returns fields and card templates. Call this before anki_create_note when using a custom note type. Do not use when the user wants to create notes or modify a note type.",
 		inputSchema: inputSchema({
 			type: "object",
 			properties: {
@@ -331,7 +333,7 @@ export const TOOLS: Tool[] = [
 		name: "anki_create_note",
 		title: "Create Anki Note",
 		description:
-			"Create one note. Call anki_get_note_type_info first for custom fields. Use anki_batch_create_notes for multiple notes.",
+			"Use when the user wants to create a single new study card (note) in an existing deck. Creates user study content — not a schema change. Do not use when the user only wants to inspect existing notes, decks, tags, or note types. To define a new note structure, use anki_create_note_type instead. Call anki_get_note_type_info first for custom fields. For multiple notes, use anki_batch_create_notes. Safety: confirm with the user before creating notes if intent is unclear.",
 		inputSchema: inputSchema({
 			type: "object",
 			properties: {
@@ -368,7 +370,7 @@ export const TOOLS: Tool[] = [
 		name: "anki_batch_create_notes",
 		title: "Batch Create Anki Notes",
 		description:
-			"Create up to 50 notes. Recommended batch size is 10-20. Returns per-note success and error details.",
+			"Use when the user wants to create multiple study cards at once (2–50 notes). Prefer this over repeated anki_create_note calls. Returns per-note success and error details. Safety: ask the user to confirm before creating a large batch of notes.",
 		inputSchema: inputSchema({
 			type: "object",
 			properties: {
@@ -486,7 +488,8 @@ export const TOOLS: Tool[] = [
 	{
 		name: "anki_update_note",
 		title: "Update Anki Note",
-		description: "Update note fields and/or replace its tags.",
+		description:
+			"Use when the user wants to edit the fields or replace the tags of an existing note. Do not use when the user only wants to inspect note content (use anki_get_note_info) or delete it (use anki_delete_note). Safety: confirm with the user before overwriting note content.",
 		inputSchema: inputSchema({
 			type: "object",
 			properties: {
@@ -520,7 +523,8 @@ export const TOOLS: Tool[] = [
 	{
 		name: "anki_delete_note",
 		title: "Delete Anki Notes",
-		description: "Delete one note by noteId or multiple notes by noteIds.",
+		description:
+			"Use when the user explicitly asks to permanently delete one or more notes. Do not use when the user only wants to inspect, search, or update notes. Safety: always confirm with the user before deleting any note — this action is irreversible.",
 		inputSchema: inputSchema({
 			type: "object",
 			properties: {
@@ -553,7 +557,8 @@ export const TOOLS: Tool[] = [
 	{
 		name: "anki_create_note_type",
 		title: "Create Anki Note Type",
-		description: "Create a custom Anki note type/model with fields and card templates.",
+		description:
+			"Use when the user wants to define a new note schema/model with custom fields and card templates. Modifies the Anki collection structure — not for creating study content. Do not use when the user wants to create notes (use anki_create_note) or inspect an existing note type (use anki_get_note_type_info). Safety: confirm with the user before creating a new note type, as this changes the collection schema.",
 		inputSchema: inputSchema({
 			type: "object",
 			properties: {
