@@ -1,0 +1,23 @@
+manifest.json
+  s_1b49f879faf9d8::t_6e821b96454e11 4
+package.json
+  s_1b49f879faf9d8::t_04c34309f45873 3
+src/_version.ts
+  s_1b49f879faf9d8::t_da13ace0b7ac38 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1beba9f730bbea174582b2a37464866c69422bca",
+  "prompts": {},
+  "sessions": {
+    "s_1b49f879faf9d8": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a0ccb2-eaef-75d6-9b18-bff97cf2df73",
+        "model": "deepseek-flash"
+      },
+      "human_author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
