@@ -23,7 +23,7 @@ A Model Context Protocol (MCP) server that enables LLMs to interact with Anki fl
 - `anki_list_note_types` - List all available note types
 - `anki_create_note_type` - Create a new note type
 - `anki_get_note_type_info` - Get detailed structure of a note type
-- `anki_sync` - Trigger AnkiWeb sync (fire-and-forget; success means Anki accepted the request, not that AnkiWeb received the data; a blocking dialog in Anki can silently keep the sync queued)
+- `anki_sync` - Trigger AnkiWeb sync; requires `{"confirm": true}` because a full sync can merge or overwrite local and remote collections. Success means Anki accepted the request, not that AnkiWeb received the data; a blocking dialog in Anki can silently keep the sync queued
 
 Legacy unprefixed tool names such as `create_note` and `list_decks` remain callable for existing clients, but new agent integrations should use the `anki_*` names.
 
