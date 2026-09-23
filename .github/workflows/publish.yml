@@ -64,11 +64,6 @@ jobs:
       - name: Pack MCPB
         run: pnpm run mcpb
 
-      - name: Upload MCPB to release
-        run: gh release upload "${GITHUB_REF_NAME}" anki-mcp-server.mcpb --clobber
-        env:
-          GH_TOKEN: ${{ github.token }}
-
       - name: Create GitHub release
         run: |
           if [ "${{ steps.channel.outputs.channel }}" = "beta" ]; then
@@ -76,5 +71,10 @@ jobs:
           else
             gh release create "${GITHUB_REF_NAME}" --verify-tag --generate-notes
           fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Upload MCPB to release
+        run: gh release upload "${GITHUB_REF_NAME}" anki-mcp-server.mcpb --clobber
         env:
           GH_TOKEN: ${{ github.token }}
