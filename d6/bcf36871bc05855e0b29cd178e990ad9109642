@@ -1,0 +1,14 @@
+.github/workflows/publish.yml
+  h_1c00b09ac89128 67-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d6bcf36871bc05855e0b29cd178e990ad9109642",
+  "prompts": {},
+  "humans": {
+    "h_1c00b09ac89128": {
+      "author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
