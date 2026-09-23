@@ -75,6 +75,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Upload MCPB to release
-        run: gh release upload "${GITHUB_REF_NAME}" anki-mcp-server.mcpb --clobber
+        run: |
+          # `mcpb pack` writes <manifest.name>.mcpb; the versioned name it prints
+          # in its output summary is not a file on disk.
+          asset="anki-mcp-server.mcpb"
+          if [ ! -f "$asset" ]; then
+            echo "::error::$asset was not produced by mcpb pack"; ls -l ./*.mcpb || true; exit 1
+          fi
+          ls -lh "$asset"
+          gh release upload "${GITHUB_REF_NAME}" "$asset" --clobber
+          gh release view "${GITHUB_REF_NAME}" --json assets --jq '.assets[].name' > /tmp/uploaded-assets.txt
+          if ! grep -qx "$asset" /tmp/uploaded-assets.txt; then
+            echo "::error::${asset} missing from release ${GITHUB_REF_NAME}"; cat /tmp/uploaded-assets.txt; exit 1
+          fi
+          echo "attached $asset to ${GITHUB_REF_NAME}"
         env:
           GH_TOKEN: ${{ github.token }}

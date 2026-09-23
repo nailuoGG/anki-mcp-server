@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "prepare": "husky",
-    "prebuild": "node -p \"'export const MCP_VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/_version.ts",
+    "prebuild": "node scripts/sync-manifest-version.mjs && node -p \"'export const MCP_VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/_version.ts",
     "build": "tsup",
     "watch": "tsup --watch",
     "mcpb": "npm run build && mcpb pack",

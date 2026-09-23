@@ -1,90 +1,90 @@
 {
-	"manifest_version": "0.2",
-	"name": "anki-mcp-server",
-	"version": "0.1.8",
-	"description": "A Model Context Protocol (MCP) server that enables LLMs to interact with Anki flashcard software through AnkiConnect",
-	"author": {
-		"name": "nailuoGG"
-	},
-	"icon": "assets/icon.png",
-	"server": {
-		"type": "binary",
-		"entry_point": "dist/index.js",
-		"mcp_config": {
-			"command": "${__dirname}/dist/index.js",
-			"args": [],
-			"env": {}
-		}
-	},
-	"tools": [
-		{
-			"name": "anki_check_connection",
-			"description": "Check whether AnkiConnect is reachable"
-		},
-		{
-			"name": "anki_list_decks",
-			"description": "List all available Anki decks"
-		},
-		{
-			"name": "anki_sync",
-			"description": "Request AnkiWeb sync"
-		},
-		{
-			"name": "anki_create_deck",
-			"description": "Create a new Anki deck"
-		},
-		{
-			"name": "anki_list_tags",
-			"description": "List all tags currently used in Anki"
-		},
-		{
-			"name": "anki_add_note_tags",
-			"description": "Add tags to one or more notes"
-		},
-		{
-			"name": "anki_remove_note_tags",
-			"description": "Remove tags from one or more notes"
-		},
-		{
-			"name": "anki_create_note",
-			"description": "Create a new note"
-		},
-		{
-			"name": "anki_batch_create_notes",
-			"description": "Create multiple notes at once"
-		},
-		{
-			"name": "anki_search_notes",
-			"description": "Search for notes using Anki query syntax"
-		},
-		{
-			"name": "anki_get_note_info",
-			"description": "Get detailed information about a note"
-		},
-		{
-			"name": "anki_update_note",
-			"description": "Update an existing note's fields and/or tags"
-		},
-		{
-			"name": "anki_delete_note",
-			"description": "Delete one or multiple notes"
-		},
-		{
-			"name": "anki_list_note_types",
-			"description": "List all available note types"
-		},
-		{
-			"name": "anki_create_note_type",
-			"description": "Create a new note type"
-		},
-		{
-			"name": "anki_get_note_type_info",
-			"description": "Get detailed structure of a note type"
-		}
-	],
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/nailuoGG/anki-mcp-server.git"
-	}
+  "manifest_version": "0.2",
+  "name": "anki-mcp-server",
+  "version": "0.2.0-beta.4",
+  "description": "A Model Context Protocol (MCP) server that enables LLMs to interact with Anki flashcard software through AnkiConnect",
+  "author": {
+    "name": "nailuoGG"
+  },
+  "icon": "assets/icon.png",
+  "server": {
+    "type": "binary",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "${__dirname}/dist/index.js",
+      "args": [],
+      "env": {}
+    }
+  },
+  "tools": [
+    {
+      "name": "anki_check_connection",
+      "description": "Check whether AnkiConnect is reachable"
+    },
+    {
+      "name": "anki_list_decks",
+      "description": "List all available Anki decks"
+    },
+    {
+      "name": "anki_sync",
+      "description": "Request AnkiWeb sync"
+    },
+    {
+      "name": "anki_create_deck",
+      "description": "Create a new Anki deck"
+    },
+    {
+      "name": "anki_list_tags",
+      "description": "List all tags currently used in Anki"
+    },
+    {
+      "name": "anki_add_note_tags",
+      "description": "Add tags to one or more notes"
+    },
+    {
+      "name": "anki_remove_note_tags",
+      "description": "Remove tags from one or more notes"
+    },
+    {
+      "name": "anki_create_note",
+      "description": "Create a new note"
+    },
+    {
+      "name": "anki_batch_create_notes",
+      "description": "Create multiple notes at once"
+    },
+    {
+      "name": "anki_search_notes",
+      "description": "Search for notes using Anki query syntax"
+    },
+    {
+      "name": "anki_get_note_info",
+      "description": "Get detailed information about a note"
+    },
+    {
+      "name": "anki_update_note",
+      "description": "Update an existing note's fields and/or tags"
+    },
+    {
+      "name": "anki_delete_note",
+      "description": "Delete one or multiple notes"
+    },
+    {
+      "name": "anki_list_note_types",
+      "description": "List all available note types"
+    },
+    {
+      "name": "anki_create_note_type",
+      "description": "Create a new note type"
+    },
+    {
+      "name": "anki_get_note_type_info",
+      "description": "Get detailed structure of a note type"
+    }
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nailuoGG/anki-mcp-server.git"
+  }
 }
