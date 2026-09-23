@@ -5,6 +5,16 @@
 import { AnkiMcpServer } from "./ankiMcpServer.js";
 
 /**
+ * stdio safety guard: stdout carries the MCP JSON-RPC transport exclusively.
+ * Any stray console.log (ours or a dependency's, e.g. environment diagnostics
+ * from bundled launchers) would corrupt the protocol stream — route it to
+ * stderr instead. console.error already goes to stderr.
+ */
+console.log = (...args: unknown[]) => {
+	process.stderr.write(args.map(String).join(" ") + "\n");
+};
+
+/**
  * Parse command line arguments
  */
 function parseArgs() {
