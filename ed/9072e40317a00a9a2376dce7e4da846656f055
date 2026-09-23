@@ -1,0 +1,14 @@
+src/index.ts
+  h_1c00b09ac89128 7-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ed9072e40317a00a9a2376dce7e4da846656f055",
+  "prompts": {},
+  "humans": {
+    "h_1c00b09ac89128": {
+      "author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
