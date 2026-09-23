@@ -1,0 +1,25 @@
+.github/workflows/publish.yml
+  s_1b49f879faf9d8::t_fd51615a381cb4 78-91
+manifest.json
+  s_1b49f879faf9d8::t_e933d4a3e325d0 2-89
+package.json
+  s_1b49f879faf9d8::t_401a82cae0e3e1 15
+scripts/sync-manifest-version.mjs
+  s_1b49f879faf9d8::t_01998ee7fb20b3 1-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "cf0461e4d307f402a107f50e14926113cf9fdd30",
+  "prompts": {},
+  "sessions": {
+    "s_1b49f879faf9d8": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a0ccb2-eaef-75d6-9b18-bff97cf2df73",
+        "model": "deepseek-flash"
+      },
+      "human_author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
