@@ -1,4 +1,11 @@
-onlyBuiltDependencies:
-  - '@biomejs/biome'
-  - esbuild
-  - unrs-resolver
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
+  unrs-resolver: true
+
+# pnpm 11 enforces a built-in 24h minimumReleaseAge for new packages.
+# These transitives published inside the quarantine window are pinned to the
+# newest compliant release; remove an entry once its latest version ages past 24h.
+overrides:
+  electron-to-chromium: 1.5.434
+  ignore: 7.0.9

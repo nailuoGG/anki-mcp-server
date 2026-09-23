@@ -1,88 +1,88 @@
 {
-    "name": "anki-mcp-server",
-    "version": "0.1.8",
-    "mcpName": "io.github.nailuoGG/anki-mcp-server",
-    "description": "A Model Context Protocol (MCP) server that enables LLMs to interact with Anki flashcard software through AnkiConnect",
-    "type": "module",
-    "bin": {
-        "anki-mcp-server": "dist/index.js"
-    },
-    "files": [
-        "dist"
-    ],
-    "scripts": {
-        "prepare": "husky",
-        "prebuild": "node -p \"'export const MCP_VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/_version.ts",
-        "build": "tsup",
-        "watch": "tsup --watch",
-        "mcpb": "npm run build && mcpb pack",
-        "validate-mcp": "curl -L --max-time 30 --fail -o server.schema.json https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json && node scripts/validate-mcp.mjs",
-        "format": "biome format . --write",
-        "lint": "biome lint src/",
-        "check": "biome check --apply .",
-        "inspector": "npx @modelcontextprotocol/inspector dist/index.js",
-        "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --detectOpenHandles",
-        "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
-        "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
-        "test:language": "node test-language.js"
-    },
-    "lint-staged": {
-        "src/**/!(*.test|*.spec).{js,jsx,ts,tsx}": [
-            "biome format --write"
-        ]
-    },
-    "dependencies": {
-        "@modelcontextprotocol/sdk": "1.29.0",
-        "axios": "1.18.0",
-        "yanki-connect": "4.0.2"
-    },
-    "devDependencies": {
-        "@anthropic-ai/mcpb": "2.1.2",
-        "@biomejs/biome": "2.4.12",
-        "@jest/globals": "30.3.0",
-        "@types/jest": "30.0.0",
-        "@types/node": "25.6.0",
-        "ajv": "^8.20.0",
-        "ajv-formats": "^3.0.1",
-        "axios-mock-adapter": "2.1.0",
-        "husky": "^9.1.7",
-        "jest": "30.3.0",
-        "lint-staged": "^16.4.0",
-        "ts-jest": "29.4.9",
-        "ts-node": "^10.9.2",
-        "tsup": "8.5.1",
-        "typescript": "5.9.3"
-    },
-    "main": "dist/index.js",
-    "exports": {
-        ".": {
-            "import": "./dist/index.js",
-            "types": "./dist/index.d.ts"
-        }
-    },
-    "keywords": [
-        "anki",
-        "mcp",
-        "llm",
-        "flashcards",
-        "ankiconnect",
-        "model-context-protocol"
-    ],
-    "author": "nailuoGG",
-    "license": "MIT",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/nailuoGG/anki-mcp-server.git"
-    },
-    "bugs": {
-        "url": "https://github.com/nailuoGG/anki-mcp-server/issues"
-    },
-    "homepage": "https://github.com/nailuoGG/anki-mcp-server#readme",
-    "engines": {
-        "node": ">=20.11.0"
-    },
-    "publishConfig": {
-        "access": "public"
-    },
-    "packageManager": "pnpm@10.33.1+sha512.05ba3c1d5d1c18f68df06470d74055e62d41fc110a0c660db1b2dfb2785327f04cf0f68345d4609bc52089e7fa0343c31593b2f9594e2c5d5da426230acc9820"
+  "name": "anki-mcp-server",
+  "version": "0.1.8",
+  "mcpName": "io.github.nailuoGG/anki-mcp-server",
+  "description": "A Model Context Protocol (MCP) server that enables LLMs to interact with Anki flashcard software through AnkiConnect",
+  "type": "module",
+  "bin": {
+    "anki-mcp-server": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "prepare": "husky",
+    "prebuild": "node -p \"'export const MCP_VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/_version.ts",
+    "build": "tsup",
+    "watch": "tsup --watch",
+    "mcpb": "npm run build && mcpb pack",
+    "validate-mcp": "curl -L --max-time 30 --fail -o server.schema.json https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json && node scripts/validate-mcp.mjs",
+    "format": "biome format . --write",
+    "lint": "biome lint src/",
+    "check": "biome check --apply .",
+    "inspector": "npx @modelcontextprotocol/inspector dist/index.js",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --detectOpenHandles",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
+    "test:language": "node test-language.js"
+  },
+  "lint-staged": {
+    "src/**/!(*.test|*.spec).{js,jsx,ts,tsx}": [
+      "biome format --write"
+    ]
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "axios": "1.20.0",
+    "yanki-connect": "4.0.11"
+  },
+  "devDependencies": {
+    "@anthropic-ai/mcpb": "2.1.2",
+    "@biomejs/biome": "2.5.14",
+    "@jest/globals": "30.5.2",
+    "@types/jest": "30.0.0",
+    "@types/node": "26.6.2",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "axios-mock-adapter": "2.1.0",
+    "husky": "9.1.7",
+    "jest": "30.5.2",
+    "lint-staged": "17.5.1",
+    "ts-jest": "29.4.12",
+    "ts-node": "10.9.2",
+    "tsup": "8.5.1",
+    "typescript": "5.9.3"
+  },
+  "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "keywords": [
+    "anki",
+    "mcp",
+    "llm",
+    "flashcards",
+    "ankiconnect",
+    "model-context-protocol"
+  ],
+  "author": "nailuoGG",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nailuoGG/anki-mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nailuoGG/anki-mcp-server/issues"
+  },
+  "homepage": "https://github.com/nailuoGG/anki-mcp-server#readme",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "packageManager": "pnpm@11.27.1"
 }
