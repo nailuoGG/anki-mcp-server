@@ -1,0 +1,75 @@
+name: publish
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # create the GitHub release
+  id-token: write # OIDC token for npm Trusted Publishing
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm # must match the package's Trusted Publisher environment on npmjs.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org/
+          cache: pnpm
+
+      - name: Ensure npm supports Trusted Publishing
+        run: npm install -g npm@latest # OIDC trusted publishing needs npm >= 11.5.1
+
+      - name: Verify version matches tag
+        run: |
+          PKG_VERSION="${GITHUB_REF_NAME#v}"
+          TAG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "${PKG_VERSION}" != "${TAG_VERSION}" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} != package.json version ${TAG_VERSION}"
+            exit 1
+          fi
+          if [[ "${GITHUB_REF_NAME}" == *"-"* ]]; then
+            echo "channel=beta" >> "$GITHUB_OUTPUT"
+          else
+            echo "channel=latest" >> "$GITHUB_OUTPUT"
+          fi
+        id: channel
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Test (stable channel gate)
+        if: steps.channel.outputs.channel == 'latest'
+        run: |
+          pnpm run lint
+          pnpm test
+
+      - name: Publish (OIDC trusted publishing, no token)
+        run: |
+          if [ "${{ steps.channel.outputs.channel }}" = "beta" ]; then
+            npm publish --tag beta
+          else
+            npm publish
+          fi
+
+      - name: Create GitHub release
+        run: |
+          if [ "${{ steps.channel.outputs.channel }}" = "beta" ]; then
+            gh release create "${GITHUB_REF_NAME}" --verify-tag --prerelease --generate-notes
+          else
+            gh release create "${GITHUB_REF_NAME}" --verify-tag --generate-notes
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
