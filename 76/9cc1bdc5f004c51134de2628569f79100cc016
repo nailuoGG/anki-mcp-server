@@ -1,0 +1,29 @@
+src/index.test.ts
+  s_1b49f879faf9d8::t_5033b2cb1cd640 341,347,351,362-383
+src/mcpDeckTools.ts
+  s_1b49f879faf9d8::t_2c4674cc24ce98 11-22
+src/mcpNoteTools.ts
+  s_1b49f879faf9d8::t_2382979c792c04 329,337,340,344,349
+src/mcpToolSchemas.ts
+  s_1b49f879faf9d8::t_a047f3f8989824 135-146,506,513,549
+src/mcpTools.ts
+  s_1b49f879faf9d8::t_75f2030b76f5da 52
+src/utils.ts
+  s_1b49f879faf9d8::t_12a3ed50b6ff39 494-497,502,512,516
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "769cc1bdc5f004c51134de2628569f79100cc016",
+  "prompts": {},
+  "sessions": {
+    "s_1b49f879faf9d8": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a0ccb2-eaef-75d6-9b18-bff97cf2df73",
+        "model": "deepseek-flash"
+      },
+      "human_author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
