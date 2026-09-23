@@ -326,7 +326,7 @@ export const updateNote = async (
 	ankiClient: AnkiClient,
 	args: Record<string, unknown>
 ): Promise<CallToolResult> => {
-	const id = requirePositiveInteger(args.id, "id");
+	const noteId = requirePositiveInteger(args.noteId, "noteId");
 	const fields = args.fields === undefined ? undefined : parseFields(args.fields);
 	const tags = args.tags === undefined ? undefined : parseTags(args.tags);
 
@@ -334,19 +334,19 @@ export const updateNote = async (
 		throw new Error("Provide fields and/or tags to update");
 	}
 
-	await requireNote(ankiClient, id);
+	await requireNote(ankiClient, noteId);
 
 	if (fields !== undefined) {
-		await ankiClient.updateNoteFields({ id, fields });
+		await ankiClient.updateNoteFields({ noteId, fields });
 	}
 
 	if (tags !== undefined) {
-		await ankiClient.updateNoteTags({ id, tags });
+		await ankiClient.updateNoteTags({ noteId, tags });
 	}
 
 	return toolResult({
 		success: true,
-		noteId: id,
+		noteId,
 		updatedFields: fields !== undefined,
 		updatedTags: tags !== undefined,
 	});

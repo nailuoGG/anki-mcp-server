@@ -49,7 +49,7 @@ export class McpToolHandler {
 				case "anki_list_decks":
 					return await listDecks(this.ankiClient, args);
 				case "anki_sync":
-					return await sync(this.ankiClient);
+					return await sync(this.ankiClient, args);
 				case "anki_create_deck":
 					return await createDeck(this.ankiClient, args);
 				case "anki_list_tags":

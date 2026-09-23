@@ -338,17 +338,17 @@ describe("McpToolHandler maintenance workflows", () => {
 		const handler = new McpToolHandler(client);
 
 		const result = await handler.executeTool("anki_update_note", {
-			id: 1234567890,
+			noteId: 1234567890,
 			fields: { Front: "Updated" },
 			tags: ["updated"],
 		});
 
 		expect(client.updateNoteFields).toHaveBeenCalledWith({
-			id: 1234567890,
+			noteId: 1234567890,
 			fields: { Front: "Updated" },
 		});
 		expect(client.updateNoteTags).toHaveBeenCalledWith({
-			id: 1234567890,
+			noteId: 1234567890,
 			tags: ["updated"],
 		});
 		expect(result.structuredContent).toEqual({
@@ -357,6 +357,28 @@ describe("McpToolHandler maintenance workflows", () => {
 			updatedFields: true,
 			updatedTags: true,
 		});
+	});
+
+	it("refuses anki_sync unless confirm is true", async () => {
+		const client = createMockClient();
+		const handler = new McpToolHandler(client);
+
+		const refused = await handler.executeTool("anki_sync", {});
+		expect(client.sync).not.toHaveBeenCalled();
+		expect(refused.structuredContent).toMatchObject({ success: false });
+
+		const confirmed = await handler.executeTool("anki_sync", { confirm: true });
+		expect(client.sync).toHaveBeenCalledTimes(1);
+		expect(confirmed.structuredContent).toMatchObject({ success: true });
+	});
+
+	it("rejects anki_delete_note without exactly one id form", async () => {
+		const client = createMockClient();
+		const handler = new McpToolHandler(client);
+
+		const result = await handler.executeTool("anki_delete_note", {});
+		expect(result.isError).toBe(true);
+		expect(JSON.stringify(result.content)).toMatch(/Provide exactly one of noteId or noteIds/);
 	});
 
 	it("lists and mutates tags for notes", async () => {

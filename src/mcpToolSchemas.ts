@@ -132,8 +132,18 @@ export const TOOLS: Tool[] = [
 		name: "anki_sync",
 		title: "Sync Anki",
 		description:
-			"Request AnkiWeb sync. Success means Anki accepted the request, not that AnkiWeb completed it.",
-		inputSchema: noInput,
+			'Request AnkiWeb sync. Requires {"confirm": true}: without it the call is refused, because a full sync can merge or overwrite local and remote collections. Success means Anki accepted the request, not that AnkiWeb completed it.',
+		inputSchema: inputSchema({
+			type: "object",
+			properties: {
+				confirm: {
+					type: "boolean",
+					description:
+						"Must be true to perform the sync. Omitted or false returns a refusal without contacting AnkiWeb.",
+				},
+			},
+			additionalProperties: false,
+		}),
 		outputSchema: outputSchema({
 			type: "object",
 			properties: {
@@ -493,14 +503,14 @@ export const TOOLS: Tool[] = [
 		inputSchema: inputSchema({
 			type: "object",
 			properties: {
-				id: { type: "number", minimum: 1, description: "Positive Anki note ID." },
+				noteId: { type: "number", minimum: 1, description: "Positive Anki note ID." },
 				fields: fieldsSchema,
 				tags: {
 					...tagsSchema,
 					description: "Replacement tag list. Pass an empty array to clear tags.",
 				},
 			},
-			required: ["id"],
+			required: ["noteId"],
 			additionalProperties: false,
 		}),
 		outputSchema: outputSchema({
@@ -536,6 +546,7 @@ export const TOOLS: Tool[] = [
 					description: "Multiple note IDs to delete.",
 				},
 			},
+			oneOf: [{ required: ["noteId"] }, { required: ["noteIds"] }],
 			additionalProperties: false,
 		}),
 		outputSchema: outputSchema({

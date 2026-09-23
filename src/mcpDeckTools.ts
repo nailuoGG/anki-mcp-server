@@ -8,7 +8,18 @@ export const checkConnection = async (ankiClient: AnkiClient): Promise<CallToolR
 	return toolResult({ connected: true, version });
 };
 
-export const sync = async (ankiClient: AnkiClient): Promise<CallToolResult> => {
+export const sync = async (
+	ankiClient: AnkiClient,
+	args: Record<string, unknown> = {}
+): Promise<CallToolResult> => {
+	if (args.confirm !== true) {
+		return toolResult({
+			success: false,
+			message:
+				'Sync not performed. A full AnkiWeb sync can overwrite or merge local and remote collections, so it requires explicit confirmation: call anki_sync with {"confirm": true} to proceed.',
+		});
+	}
+
 	await ankiClient.sync();
 	return toolResult({
 		success: true,

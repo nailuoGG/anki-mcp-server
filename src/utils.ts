@@ -491,12 +491,15 @@ export class AnkiClient {
 	/**
 	 * Update note fields
 	 */
-	async updateNoteFields(params: { id: number; fields: Record<string, string> }): Promise<void> {
+	async updateNoteFields(params: {
+		noteId: number;
+		fields: Record<string, string>;
+	}): Promise<void> {
 		try {
 			await this.executeOnce(() =>
 				this.client.note.updateNoteFields({
 					note: {
-						id: params.id,
+						id: params.noteId,
 						fields: params.fields,
 					},
 				})
@@ -506,11 +509,11 @@ export class AnkiClient {
 		}
 	}
 
-	async updateNoteTags(params: { id: number; tags: string[] }): Promise<void> {
+	async updateNoteTags(params: { noteId: number; tags: string[] }): Promise<void> {
 		try {
 			await this.executeOnce(() =>
 				this.client.note.updateNoteTags({
-					note: params.id,
+					note: params.noteId,
 					tags: params.tags,
 				})
 			);
