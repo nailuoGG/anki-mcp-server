@@ -1,6 +1,6 @@
 {
   "name": "anki-mcp-server",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "mcpName": "io.github.nailuoGG/anki-mcp-server",
   "description": "A Model Context Protocol (MCP) server that enables LLMs to interact with Anki flashcard software through AnkiConnect",
   "type": "module",
