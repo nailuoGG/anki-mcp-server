@@ -1,0 +1,22 @@
+.github/workflows/publish.yml
+  s_87dd15b72aa0a0::t_3be657d5968bc9 14-15,28-29,36-37,73-74,83-84,87-89,93-94,96-98
+  s_87dd15b72aa0a0::t_71959738703b19 17,20
+.github/workflows/ci.yml
+  s_87dd15b72aa0a0::t_71959738703b19 16,19,49,52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a825d2f46a721e8dc2b4b60481c84e34efee5dc9",
+  "prompts": {},
+  "sessions": {
+    "s_87dd15b72aa0a0": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a133ae-0c07-7658-9440-6ea9e0ce7e0c",
+        "model": "glm-5.3-flash"
+      },
+      "human_author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
