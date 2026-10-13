@@ -1,3 +1,7 @@
+# Publishes on v* tags: npm (OIDC trusted publishing) + GitHub release + MCPB.
+# Accepted advisories: adhoc-packages (npm@latest is required by the registry's
+# minimum-version policy) and template-injection (channel value is derived
+# locally from the tag name, not from untrusted input).
 name: publish
 
 on:
@@ -11,27 +15,34 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    environment: npm # must match the package's Trusted Publisher environment on npmjs.com
+    # must match the package's Trusted Publisher environment on npmjs.com
+    environment: npm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
       - name: Setup toolchain via mise (Node 24, pnpm 11)
-        uses: jdx/mise-action@v2
+        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
         with:
           install_args: node pnpm
+          # publishing must not trust a restored tool cache
+          cache: false
 
       - name: Point npm at the official registry (OIDC publish target)
         run: npm config set registry https://registry.npmjs.org/
 
       - name: Ensure npm supports Trusted Publishing
-        run: npm install -g npm@latest # OIDC trusted publishing needs npm >= 11.5.1
+        # OIDC trusted publishing needs npm >= 11.5.1
+        run: npm install -g npm@latest
 
       - name: Verify version matches tag
         run: |
           PKG_VERSION="${GITHUB_REF_NAME#v}"
           TAG_VERSION="$(node -p "require('./package.json').version")"
           if [ "${PKG_VERSION}" != "${TAG_VERSION}" ]; then
-            echo "::error::tag ${GITHUB_REF_NAME} != package.json version ${TAG_VERSION}"
+            echo "::error::tag ${GITHUB_REF_NAME}" \
+              "!= package.json version ${TAG_VERSION}"
             exit 1
           fi
           if [[ "${GITHUB_REF_NAME}" == *"-"* ]]; then
@@ -67,7 +78,8 @@ jobs:
       - name: Create GitHub release
         run: |
           if [ "${{ steps.channel.outputs.channel }}" = "beta" ]; then
-            gh release create "${GITHUB_REF_NAME}" --verify-tag --prerelease --generate-notes
+            gh release create "${GITHUB_REF_NAME}" \
+              --verify-tag --prerelease --generate-notes
           else
             gh release create "${GITHUB_REF_NAME}" --verify-tag --generate-notes
           fi
@@ -76,17 +88,22 @@ jobs:
 
       - name: Upload MCPB to release
         run: |
-          # `mcpb pack` writes <manifest.name>.mcpb; the versioned name it prints
-          # in its output summary is not a file on disk.
+          # `mcpb pack` writes <manifest.name>.mcpb; the versioned name
+          # printed in its output summary is not a file on disk.
           asset="anki-mcp-server.mcpb"
           if [ ! -f "$asset" ]; then
-            echo "::error::$asset was not produced by mcpb pack"; ls -l ./*.mcpb || true; exit 1
+            echo "::error::$asset was not produced by mcpb pack"
+            ls -l ./*.mcpb || true
+            exit 1
           fi
           ls -lh "$asset"
           gh release upload "${GITHUB_REF_NAME}" "$asset" --clobber
-          gh release view "${GITHUB_REF_NAME}" --json assets --jq '.assets[].name' > /tmp/uploaded-assets.txt
+          gh release view "${GITHUB_REF_NAME}" --json assets \
+            --jq '.assets[].name' > /tmp/uploaded-assets.txt
           if ! grep -qx "$asset" /tmp/uploaded-assets.txt; then
-            echo "::error::${asset} missing from release ${GITHUB_REF_NAME}"; cat /tmp/uploaded-assets.txt; exit 1
+            echo "::error::${asset} missing from release ${GITHUB_REF_NAME}"
+            cat /tmp/uploaded-assets.txt
+            exit 1
           fi
           echo "attached $asset to ${GITHUB_REF_NAME}"
         env:
