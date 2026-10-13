@@ -102,13 +102,22 @@ describe("McpToolHandler schema", () => {
 	it("keeps legacy tool names callable without advertising them", async () => {
 		const handler = new McpToolHandler(createMockClient());
 
-		const result = await handler.executeTool("list_decks", {});
+		const first = await handler.executeTool("list_decks", {});
 
-		expect(result.structuredContent).toEqual({
+		expect(first.structuredContent).toEqual({
 			decks: ["Default"],
 			count: 1,
+			});
+		expect(textJson(first)).toEqual(first.structuredContent);
+		expect(first.content).toHaveLength(2);
+		expect(first.content[1]).toMatchObject({
+			type: "text",
+			text: expect.stringContaining('"list_decks" has been renamed to "anki_list_decks"'),
 		});
-		expect(textJson(result)).toEqual(result.structuredContent);
+
+		// The deprecation notice is one-time per tool per handler session.
+		const second = await handler.executeTool("list_decks", {});
+		expect(second.content).toHaveLength(1);
 	});
 
 	it("returns tool execution errors as isError results", async () => {
