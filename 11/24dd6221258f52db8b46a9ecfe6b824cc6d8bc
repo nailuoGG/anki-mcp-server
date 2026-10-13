@@ -1,0 +1,19 @@
+src/index.ts
+  s_87dd15b72aa0a0::t_384ab7c05af92d 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1124dd6221258f52db8b46a9ecfe6b824cc6d8bc",
+  "prompts": {},
+  "sessions": {
+    "s_87dd15b72aa0a0": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a133ae-0c07-7658-9440-6ea9e0ce7e0c",
+        "model": "glm-5.3-flash"
+      },
+      "human_author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
