@@ -24,7 +24,6 @@
     "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --detectOpenHandles",
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
-    "test:language": "node test-language.js",
     "typecheck": "tsc --noEmit"
   },
   "lint-staged": {
