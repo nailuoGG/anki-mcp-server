@@ -1,0 +1,21 @@
+src/mcpTools.ts
+  s_87dd15b72aa0a0::t_5246f01e956d01 32,44-56,58-75
+src/index.test.ts
+  s_87dd15b72aa0a0::t_a5948ce5dec58f 105,107,110-115,117-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7a1497fa50f331fa57b7d8b8858dbf0854e6c445",
+  "prompts": {},
+  "sessions": {
+    "s_87dd15b72aa0a0": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a133ae-0c07-7658-9440-6ea9e0ce7e0c",
+        "model": "glm-5.3-flash"
+      },
+      "human_author": null
+    }
+  }
+}
