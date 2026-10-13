@@ -11,7 +11,7 @@ import { AnkiMcpServer } from "./ankiMcpServer.js";
  * stderr instead. console.error already goes to stderr.
  */
 console.log = (...args: unknown[]) => {
-	process.stderr.write(args.map(String).join(" ") + "\n");
+	process.stderr.write(`${args.map(String).join(" ")}\n`);
 };
 
 /**
