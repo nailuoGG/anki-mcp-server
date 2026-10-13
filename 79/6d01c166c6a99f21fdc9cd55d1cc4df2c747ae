@@ -1,0 +1,27 @@
+src/_version.ts
+  s_87dd15b72aa0a0::t_f50a515ed395e2 1
+CHANGELOG.md
+  s_87dd15b72aa0a0::t_0c2c4060dcf496 8-21
+manifest.json
+  s_87dd15b72aa0a0::t_ab7ea016ef868e 4
+package.json
+  s_87dd15b72aa0a0::t_649815aa3c257b 3
+server.json
+  s_87dd15b72aa0a0::t_f192702e046771 5,14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "796d01c166c6a99f21fdc9cd55d1cc4df2c747ae",
+  "prompts": {},
+  "sessions": {
+    "s_87dd15b72aa0a0": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a133ae-0c07-7658-9440-6ea9e0ce7e0c",
+        "model": "glm-5.3-flash"
+      },
+      "human_author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
