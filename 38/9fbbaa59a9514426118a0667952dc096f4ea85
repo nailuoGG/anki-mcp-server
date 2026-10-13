@@ -1,0 +1,34 @@
+.github/workflows/ci.yml
+  s_87dd15b72aa0a0::t_49e973b9c58980 19,24,54,59
+  s_87dd15b72aa0a0::t_f79537579a944f 20-21,55-56,68-69
+  s_5b0900745c00fa::t_33669cc72b3173 9-11
+.github/workflows/publish.yml
+  s_87dd15b72aa0a0::t_ede279d29b25ed 22-23,29-30
+  s_87dd15b72aa0a0::t_a8322826b6d7ff 1-4
+  s_87dd15b72aa0a0::t_49e973b9c58980 21,26
+  s_87dd15b72aa0a0::t_3be657d5968bc9 18-19,36-37,44-45,81-82,91-92,95-97,101-102,104-106
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "389fbbaa59a9514426118a0667952dc096f4ea85",
+  "prompts": {},
+  "sessions": {
+    "s_5b0900745c00fa": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a13302-890d-7501-bc88-2fd5d142a4da",
+        "model": "glm-5.3-flash"
+      },
+      "human_author": "James L. <nailuogg@gmail.com>"
+    },
+    "s_87dd15b72aa0a0": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a133ae-0c07-7658-9440-6ea9e0ce7e0c",
+        "model": "glm-5.3-flash"
+      },
+      "human_author": null
+    }
+  }
+}
