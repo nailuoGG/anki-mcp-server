@@ -1,0 +1,31 @@
+skills/anki/SKILL.md
+  s_87dd15b72aa0a0::t_d1283f98ea935a 51
+src/mcpTools.ts
+  s_87dd15b72aa0a0::t_095d597eafdf6c 23,96
+README.md
+  s_87dd15b72aa0a0::t_15ffd5b837c2bd 28-29
+CLAUDE.md
+  s_87dd15b72aa0a0::t_b4232bed8eeaef 62-75
+CHANGELOG.md
+  s_87dd15b72aa0a0::t_1d297be1c28978 8-14
+src/index.test.ts
+  s_87dd15b72aa0a0::t_55d8ef142dc10e 375,432
+  s_87dd15b72aa0a0::t_235be0e56b8a2d 2
+  s_87dd15b72aa0a0::t_e235504bbc014f 93,96-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "32bff1f9915fc304864d72afaa73079e491d57d7",
+  "prompts": {},
+  "sessions": {
+    "s_87dd15b72aa0a0": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a133ae-0c07-7658-9440-6ea9e0ce7e0c",
+        "model": "glm-5.3-flash"
+      },
+      "human_author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
