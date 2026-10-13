@@ -59,17 +59,20 @@ npm run check
 ### MCP Tools Available
 
 The server implements the following tools:
-- `list_decks` - List all available Anki decks
-- `create_deck` - Create a new Anki deck
-- `create_note` - Create a new note (Basic or Cloze)
-- `batch_create_notes` - Create multiple notes at once
-- `search_notes` - Search for notes using Anki query syntax
-- `get_note_info` - Get detailed information about a note
-- `update_note` - Update an existing note
-- `delete_note` - Delete a note
-- `list_note_types` - List all available note types
-- `create_note_type` - Create a new note type
-- `get_note_type_info` - Get detailed structure of a note type
+- `anki_list_decks` - List all available Anki decks
+- `anki_create_deck` - Create a new Anki deck
+- `anki_create_note` - Create a new note (Basic or Cloze)
+- `anki_batch_create_notes` - Create multiple notes at once
+- `anki_search_notes` - Search for notes using Anki query syntax
+- `anki_get_note_info` - Get detailed information about a note
+- `anki_update_note` - Update an existing note
+- `anki_delete_note` - Delete one or multiple notes
+- `anki_list_note_types` - List all available note types
+- `anki_create_note_type` - Create a new note type
+- `anki_get_note_type_info` - Get detailed structure of a note type
+- `anki_check_connection` - Check whether AnkiConnect is reachable
+- `anki_list_tags` / `anki_add_note_tags` / `anki_remove_note_tags` - Tag management
+- `anki_sync` - Trigger AnkiWeb sync (requires `{"confirm": true}`)
 
 ### Build Configuration
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from "@jest/globals";
-import { ErrorCode, McpError, type CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import { McpToolHandler } from "./mcpTools.js";
 import type { AnkiClient } from "./utils.js";
 
@@ -11,15 +11,6 @@ const sampleNote = {
 		Front: { value: "What is MCP?", order: 0 },
 		Back: { value: "Model Context Protocol", order: 1 },
 	},
-};
-
-const textJson = (result: CallToolResult) => {
-	const content = result.content[0];
-	if (content.type !== "text") {
-		throw new Error("Expected text content");
-	}
-
-	return JSON.parse(content.text);
 };
 
 const createMockClient = (overrides: Partial<Record<keyof AnkiClient, unknown>> = {}) =>
@@ -99,25 +90,12 @@ describe("McpToolHandler schema", () => {
 		});
 	});
 
-	it("keeps legacy tool names callable without advertising them", async () => {
+	it("rejects legacy unprefixed tool names", async () => {
 		const handler = new McpToolHandler(createMockClient());
 
-		const first = await handler.executeTool("list_decks", {});
-
-		expect(first.structuredContent).toEqual({
-			decks: ["Default"],
-			count: 1,
-			});
-		expect(textJson(first)).toEqual(first.structuredContent);
-		expect(first.content).toHaveLength(2);
-		expect(first.content[1]).toMatchObject({
-			type: "text",
-			text: expect.stringContaining('"list_decks" has been renamed to "anki_list_decks"'),
-		});
-
-		// The deprecation notice is one-time per tool per handler session.
-		const second = await handler.executeTool("list_decks", {});
-		expect(second.content).toHaveLength(1);
+		await expect(handler.executeTool("list_decks", {})).rejects.toThrow(
+			"Unknown tool: list_decks"
+		);
 	});
 
 	it("returns tool execution errors as isError results", async () => {
@@ -394,7 +372,7 @@ describe("McpToolHandler maintenance workflows", () => {
 		const client = createMockClient();
 		const handler = new McpToolHandler(client);
 
-		const listed = await handler.executeTool("list_tags", {});
+		const listed = await handler.executeTool("anki_list_tags", {});
 		const added = await handler.executeTool("anki_add_note_tags", {
 			noteIds: [1234567890, 9876543210],
 			tags: ["programming", "mcp"],
@@ -451,7 +429,7 @@ describe("McpToolHandler maintenance workflows", () => {
 		const client = createMockClient();
 		const handler = new McpToolHandler(client);
 
-		const result = await handler.executeTool("delete_note", { noteId: 1234567890 });
+		const result = await handler.executeTool("anki_delete_note", { noteId: 1234567890 });
 
 		expect(client.deleteNotes).toHaveBeenCalledWith([1234567890]);
 		expect(result.structuredContent).toEqual({

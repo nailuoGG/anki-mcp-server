@@ -20,7 +20,7 @@ import {
 } from "./mcpNoteTools.js";
 import { addNoteTags, listTags, removeNoteTags } from "./mcpTagTools.js";
 import { toolErrorResult } from "./mcpToolResponses.js";
-import { LEGACY_TOOL_ALIASES, TOOLS } from "./mcpToolSchemas.js";
+import { TOOLS } from "./mcpToolSchemas.js";
 import { AnkiClient } from "./utils.js";
 
 /**
@@ -29,7 +29,6 @@ import { AnkiClient } from "./utils.js";
 export class McpToolHandler {
 	private readonly ankiClient: AnkiClient;
 	private readonly onCatalogChanged?: () => void;
-	private readonly deprecationWarned = new Set<string>();
 
 	constructor(ankiClient?: AnkiClient, onCatalogChanged?: () => void) {
 		this.ankiClient = ankiClient ?? new AnkiClient();
@@ -41,36 +40,6 @@ export class McpToolHandler {
 	}
 
 	async executeTool(name: string, args: Record<string, unknown>): Promise<CallToolResult> {
-		const legacyName = LEGACY_TOOL_ALIASES[name];
-		const result = await this.executeCanonicalTool(legacyName ?? name, args);
-
-		if (!legacyName || result.isError) {
-			return result;
-		}
-
-		// One-time per tool per session: legacy aliases stay callable but are
-		// not advertised in tools/list; nudge clients toward the anki_* name.
-		if (this.deprecationWarned.has(legacyName)) {
-			return result;
-		}
-		this.deprecationWarned.add(legacyName);
-
-		return {
-			...result,
-			content: [
-				...result.content,
-				{
-					type: "text" as const,
-					text: `Deprecated: tool "${name}" has been renamed to "${legacyName}". The legacy alias will be removed in a future release; please use "${legacyName}".`,
-				},
-			],
-		};
-	}
-
-	private async executeCanonicalTool(
-		name: string,
-		args: Record<string, unknown>
-	): Promise<CallToolResult> {
 		try {
 			switch (name) {
 				case "anki_check_connection":
@@ -124,7 +93,7 @@ export class McpToolHandler {
 	}
 
 	private resolveDynamicModelName(name: string): string | null {
-		const match = name.match(/^create_(.+)_note$/) ?? name.match(/^anki_create_(.+)_note$/);
+		const match = name.match(/^anki_create_(.+)_note$/);
 		return match ? match[1].replace(/_/g, " ") : null;
 	}
 }

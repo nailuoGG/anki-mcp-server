@@ -618,21 +618,3 @@ export const TOOLS: Tool[] = [
 		},
 	},
 ];
-
-export const LEGACY_TOOL_ALIASES: Record<string, string> = {
-	list_decks: "anki_list_decks",
-	sync: "anki_sync",
-	create_deck: "anki_create_deck",
-	list_tags: "anki_list_tags",
-	add_note_tags: "anki_add_note_tags",
-	remove_note_tags: "anki_remove_note_tags",
-	get_note_type_info: "anki_get_note_type_info",
-	create_note: "anki_create_note",
-	batch_create_notes: "anki_batch_create_notes",
-	search_notes: "anki_search_notes",
-	get_note_info: "anki_get_note_info",
-	update_note: "anki_update_note",
-	delete_note: "anki_delete_note",
-	list_note_types: "anki_list_note_types",
-	create_note_type: "anki_create_note_type",
-};

@@ -48,7 +48,7 @@ Create and manage Anki flashcards through the `anki-mcp-server` MCP integration.
 | List note types | `anki_list_note_types` | — |
 | Get field names | `anki_get_note_type_info` | `modelName` |
 
-Legacy unprefixed tool names still work, but prefer the `anki_*` tools for new workflows.
+Only the `anki_*` tool names are available; unprefixed legacy names are rejected.
 
 ## Core Workflows
 
