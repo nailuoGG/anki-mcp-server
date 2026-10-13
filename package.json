@@ -24,7 +24,8 @@
     "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --detectOpenHandles",
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
-    "test:language": "node test-language.js"
+    "test:language": "node test-language.js",
+    "typecheck": "tsc --noEmit"
   },
   "lint-staged": {
     "src/**/!(*.test|*.spec).{js,jsx,ts,tsx}": [
@@ -32,26 +33,27 @@
     ]
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.30.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "axios": "1.20.0",
-    "yanki-connect": "4.0.11"
+    "yanki-connect": "4.0.12"
   },
   "devDependencies": {
     "@anthropic-ai/mcpb": "2.1.2",
-    "@biomejs/biome": "2.5.14",
+    "@biomejs/biome": "2.5.15",
     "@jest/globals": "30.5.2",
+    "@swc/core": "1.16.18",
+    "@swc/jest": "0.2.39",
     "@types/jest": "30.0.0",
-    "@types/node": "26.6.2",
+    "@types/node": "26.6.5",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "axios-mock-adapter": "2.1.0",
     "husky": "9.1.7",
     "jest": "30.5.2",
-    "lint-staged": "17.5.1",
-    "ts-jest": "29.4.12",
+    "lint-staged": "17.6.0",
     "ts-node": "10.9.2",
     "tsup": "8.5.1",
-    "typescript": "5.9.3"
+    "typescript": "7.0.2"
   },
   "main": "dist/index.js",
   "exports": {
