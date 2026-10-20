@@ -6,7 +6,12 @@ allowBuilds:
 
 # pnpm 11 enforces a built-in 24h minimumReleaseAge for new packages.
 # These transitives published inside the quarantine window are pinned to the
-# newest compliant release; remove an entry once its latest version ages past 24h.
+# newest compliant release; remove an entry once its latest
+# version ages past 24h.
 overrides:
   electron-to-chromium: 1.5.434
   ignore: 7.0.9
+  # tmp@^0.0.33 (external-editor, via mcpb>@inquirer) 钉死旧版；override 到 0.2.7
+  # 修复 GHSA-ph9p-34f9-6g65 (high) + GHSA-52f5-9888-hmc6。tmp 0.2.x 保留
+  # fileSync/dirSync 回调 API，external-editor 兼容。上游发新版修复后可移除。
+  tmp: 0.2.7
