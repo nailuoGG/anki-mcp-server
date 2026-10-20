@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-10-20
+
+### Security
+- `tmp` pinned to 0.2.7 across the dependency tree via a pnpm override,
+  clearing GHSA-ph9p-34f9-6g65 (high) and GHSA-52f5-9888-hmc6. `external-editor`
+  (via `@anthropic-ai/mcpb` → `@inquirer`) pins `tmp@^0.0.33`, so an override is
+  the only way to move it; remove the entry once upstream releases a fixed
+  transitive
+- Known remaining audit findings with no upstream fix: `node-forge` 1.4.0
+  (GHSA-86w9-cpqp-85rv) and `sprintf-js` 1.1.3 (GHSA-hp3w-g68c-fv3c); both are
+  devDependencies transitives that do not ship in `dist`
+
+### Changed
+- `tsup` 8.5.1 → 9.0.0 (build tool only), which moves the bundler to `esbuild`
+  0.28.2 and clears GHSA-g7r4-m6w7-qqqr
+
 ## [0.2.1] - 2026-10-13
 
 ### Changed
