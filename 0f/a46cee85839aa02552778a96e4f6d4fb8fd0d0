@@ -1,0 +1,19 @@
+pnpm-workspace.yaml
+  s_78e1e2fb95ac96::t_c11f55bf2e2e31 7-10,12-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0fa46cee85839aa02552778a96e4f6d4fb8fd0d0",
+  "prompts": {},
+  "sessions": {
+    "s_78e1e2fb95ac96": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a17b1d-dd0e-7568-8a1c-dc80b7c06d60",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
