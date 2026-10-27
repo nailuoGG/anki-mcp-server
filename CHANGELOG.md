@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2026-10-27
+
+### Security
+- Update transitive `body-parser` to 2.4.0 and `fast-uri` to 3.1.9, clearing
+  five security advisories. Full dependency audit findings drop from seven to two.
+- Remaining high-severity findings affect `node-forge` 1.4.0 (via `@anthropic-ai/mcpb`)
+  and Zod 3.25.76 (via the MCP SDK and MCPB tooling). `node-forge` has no fixed
+  release; resolving the Zod finding requires a compatible migration to Zod 4.
+
+### Changed
+- `@modelcontextprotocol/sdk` 1.32.1 → 1.32.2, `@biomejs/biome` 2.5.15 → 2.6.3,
+  and `@swc/core` 1.16.18 → 1.16.20.
+- Refresh compatible transitive dependencies and remove the expired `ignore`
+  quarantine override, allowing 7.0.14.
+- Migrate the Biome configuration to the 2.6.3 schema and recommended preset.
+
 ## [0.2.2] - 2026-10-20
 
 ### Security
