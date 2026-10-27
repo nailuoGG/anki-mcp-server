@@ -1,0 +1,21 @@
+package.json
+  s_78e1e2fb95ac96::t_1730e65bd0d330 3
+CHANGELOG.md
+  s_78e1e2fb95ac96::t_32dd369fe4429f 8-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a32edee2c1c522a4d477d5b46fe1e1c1bb48b68e",
+  "prompts": {},
+  "sessions": {
+    "s_78e1e2fb95ac96": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a17b1d-dd0e-7568-8a1c-dc80b7c06d60",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
