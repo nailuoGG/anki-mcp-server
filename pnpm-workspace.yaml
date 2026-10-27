@@ -4,11 +4,18 @@ allowBuilds:
   esbuild: true
   unrs-resolver: true
 
-# pnpm 11 enforces a built-in 24h minimumReleaseAge for new packages.
-# These transitives published inside the quarantine window are pinned to the
-# newest compliant release; remove an entry once its latest
-# version ages past 24h.
+# 仅提前采用已验证的安全修复；该版本发布满 24 小时后移除例外。
+minimumReleaseAgeExclude:
+  - node-forge@1.4.1
+
 overrides:
+  # MCPB 2.1.2 的安全修复已验证；升级 MCPB 后重新评估这些定向覆盖。
+  '@anthropic-ai/mcpb@2.1.2>node-forge': 1.4.1
+  '@anthropic-ai/mcpb@2.1.2>zod': 4.6.7
+  # pnpm 11 enforces a built-in 24h minimumReleaseAge for new packages.
+  # These transitives published inside the quarantine window are pinned to the
+  # newest compliant release; remove an entry once its latest
+  # version ages past 24h.
   electron-to-chromium: 1.5.434
   # tmp@^0.0.33 (external-editor, via mcpb>@inquirer) 钉死旧版；override 到 0.2.7
   # 修复 GHSA-ph9p-34f9-6g65 (high) + GHSA-52f5-9888-hmc6。tmp 0.2.x 保留
