@@ -1,0 +1,22 @@
+package.json
+  s_78e1e2fb95ac96::t_c056cef0d6e23a 36,42,44
+biome.json
+  s_78e1e2fb95ac96::t_30a792c35baebc 2
+  s_78e1e2fb95ac96::t_52e8f6fdcea10a 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3d98443ff0fac3635f14b62fd70f856d96b86cc9",
+  "prompts": {},
+  "sessions": {
+    "s_78e1e2fb95ac96": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a17b1d-dd0e-7568-8a1c-dc80b7c06d60",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "James L. <nailuogg@gmail.com>"
+    }
+  }
+}
