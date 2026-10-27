@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2026-10-27
+
+### Security
+- Pin production Zod to 4.6.7 and resolve the MCP SDK and its JSON Schema
+  converter against that version, clearing the production Zod advisory.
+  Production dependency audit findings drop from one high-severity finding to zero.
+- Keep MCPB tooling on its supported Zod 3 dependency range. Two high-severity
+  findings remain in development dependencies: Zod 3.25.76 and `node-forge` 1.4.0.
+
 ## [0.2.3] - 2026-10-27
 
 ### Security
