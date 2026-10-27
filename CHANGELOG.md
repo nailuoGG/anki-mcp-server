@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5] - 2026-10-27
+
+### Security
+- Resolve MCPB 2.1.2 against `node-forge` 1.4.1 and Zod 4.6.7 with scoped
+  overrides, clearing the two remaining development dependency advisories.
+  Full and production dependency audits now report zero findings.
+- Allow only `node-forge@1.4.1` through the 24-hour release waiting period
+  to adopt the verified security patch. Remove this exception after the waiting
+  period, and reassess the scoped overrides when MCPB is upgraded.
+
 ## [0.2.4] - 2026-10-27
 
 ### Security
