@@ -4,13 +4,9 @@ allowBuilds:
   esbuild: true
   unrs-resolver: true
 
-# 仅提前采用已验证的安全修复；该版本发布满 24 小时后移除例外。
-minimumReleaseAgeExclude:
-  - node-forge@1.4.1
-
 overrides:
   # MCPB 2.1.2 的安全修复已验证；升级 MCPB 后重新评估这些定向覆盖。
-  '@anthropic-ai/mcpb@2.1.2>node-forge': 1.4.1
+  '@anthropic-ai/mcpb@2.1.2>node-forge': 1.4.3
   '@anthropic-ai/mcpb@2.1.2>zod': 4.6.7
   # pnpm 11 enforces a built-in 24h minimumReleaseAge for new packages.
   # These transitives published inside the quarantine window are pinned to the

@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@anthropic-ai/mcpb@2.1.2>node-forge': 1.4.1
+  '@anthropic-ai/mcpb@2.1.2>node-forge': 1.4.3
   '@anthropic-ai/mcpb@2.1.2>zod': 4.6.7
   electron-to-chromium: 1.5.434
   tmp: 0.2.7
@@ -2307,8 +2307,8 @@ packages:
   node-addon-api@7.1.1:
     resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
 
-  node-forge@1.4.1:
-    resolution: {integrity: sha512-w5/MfWaeMrpR/5ba6fZyAUTLSuE6aYz7H/3cYrqwZEmf5eQS3IaaLgJt4MBv7HglGFWmV22K8h4U18RJQmw/ow==}
+  node-forge@1.4.3:
+    resolution: {integrity: sha512-P6wzfh6t70avmV8FrVEAd/36sOPJQ+hkaJVX1Laap9J/77m7M0eyozDvc8SwnDf4P7MP94gwbAAo0rg3YVXT+g==}
     engines: {node: '>= 6.13.0'}
 
   node-int64@0.4.0:
@@ -2851,7 +2851,7 @@ snapshots:
       fflate: 0.8.3
       galactus: 1.0.0(supports-color@8.1.1)
       ignore: 7.0.14
-      node-forge: 1.4.1
+      node-forge: 1.4.3
       pretty-bytes: 5.6.0
       zod: 4.6.7
       zod-to-json-schema: 3.25.2(zod@4.6.7)
@@ -5115,7 +5115,7 @@ snapshots:
 
   node-addon-api@7.1.1: {}
 
-  node-forge@1.4.1: {}
+  node-forge@1.4.3: {}
 
   node-int64@0.4.0: {}
 
