@@ -4,27 +4,9 @@ This guide provides step-by-step instructions for installing and configuring the
 
 ## Installation Steps
 
-### Preferred: Install via Desktop Extension (.mcpb)
+### Configure an MCP client
 
-1. Download the `.mcpb` bundle from the Releases page (or build locally with `mcpb pack`).
-2. Open Claude Desktop → Settings → Extensions.
-3. Drag the `.mcpb` file into the window and click Install.
-
-To build the bundle locally:
-
-```bash
-npm install -g @anthropic-ai/mcpb
-mcpb pack
-```
-
-This validates `manifest.json` and outputs an installable archive. See: [Desktop Extensions: One-click MCP server installation for Claude Desktop](https://www.anthropic.com/engineering/desktop-extensions).
-
-### Alternative: Manual configuration for Claude Desktop
-
-Edit your Claude configuration file:
-
-- MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+Use an MCP client that supports stdio servers. Run the published npm package with `npx --yes anki-mcp-server`; for clients using `mcpServers`, add:
 
 ```json
 {
@@ -57,7 +39,7 @@ Add the anki server to your `cline_mcp_settings.json`
 To verify the installation:
 
 1. Ensure Anki is running
-2. Start Claude
+2. Start your MCP client
 3. Try creating a new note with the following prompt:
 
 ```
@@ -79,7 +61,7 @@ Back: Paris
    - Ensure the build file is executable:
 
    ```bash
-   chmod +x build/index.js
+   chmod +x dist/index.js
    ```
 
 3. "Deck not found" error:
