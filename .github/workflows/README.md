@@ -1,113 +1,27 @@
 # GitHub Actions Workflows
 
-This directory contains the GitHub Actions workflows for the Anki MCP Server project.
+## CI (`ci.yml`)
 
-## Workflow Architecture
+Runs on pushes and pull requests to `master` using Node 24 and pnpm 11 via mise.
+The test job runs a frozen dependency install, lint, typecheck, build, MCP metadata
+validation, tests, and a package dry run. The dependent build-check job builds again
+and uploads `dist/` as a temporary CI artifact.
 
-### 1. CI Workflow (`ci.yml`)
-**Trigger:** Push to `master` branch, Pull Requests to `master`
-**Purpose:** Continuous Integration - Code quality and testing
+## Publishing (`publish.yml`)
 
-**Jobs:**
-- `test`: Multi-version testing (Node 20.x, 22.x)
-  - Lint code
-  - Build project
-  - Validate MCP schema
-  - Run tests
-  - Check package validity
-- `build-check`: Build verification
-  - Upload build artifacts
+Runs only when a `v*` tag is pushed. The workflow verifies that the tag matches
+`package.json`, installs frozen dependencies, and builds the npm package.
+Stable tags run lint and tests, publish to npm with dist-tag `latest`, and create
+a GitHub Release. Prerelease tags containing `-` publish with dist-tag `beta`
+and create a GitHub prerelease.
 
-### 2. Release Workflow (`release.yml`)
-**Trigger:** GitHub Release created
-**Purpose:** Publish stable releases to NPM and MCP Registry
+npm publishing uses Trusted Publishing (OIDC) in the `npm` environment.
+GitHub Release creation uses the workflow's `GITHUB_TOKEN`; no `NPM_TOKEN` is used.
+See [RELEASE.md](../../RELEASE.md) for the release procedure and required setup.
 
-**Jobs:**
-- `test`: Pre-release testing (Node 20.x, 22.x)
-  - Same as CI test job
-- `publish-npm`: Publish to NPM
-  - Build and publish to NPM with provenance
-  - Upload NPM logs
-- `publish-mcp`: Publish to MCP Registry
-  - Validate server.json schema
-  - Install MCP Publisher CLI
-  - Login with OIDC
-  - Publish to MCP Registry
-  - Upload MCP logs
-- `notify`: Release status notification
-  - Report success/failure status
+MCP Registry publication remains a separate manual operation documented in the
+[README](../../README.md#publishing-to-mcp-registry). To validate its metadata locally:
 
-### 3. Beta Release Workflow (`beta-release.yml`)
-**Trigger:** Push to `release-beta/*` branches
-**Purpose:** Publish beta releases for testing
-
-**Jobs:**
-- `beta-test`: Beta testing (Node 20.x, 22.x)
-  - Same as CI test job
-- `beta-publish-npm`: Publish beta to NPM
-  - Generate beta version number
-  - Update package.json and server.json versions
-  - Publish with beta tag
-  - Create Git tag
-- `beta-publish-mcp`: Publish beta to MCP Registry
-  - Same as release MCP publishing
-- `beta-notify`: Beta release status notification
-
-## Key Features
-
-### ✅ **Unified Architecture**
-- Clear separation of concerns
-- Consistent testing across all workflows
-- Parallel execution where possible
-
-### ✅ **Comprehensive Testing**
-- Multi-version Node.js testing
-- Code quality checks (lint, format)
-- MCP schema validation
-- Package validity verification
-
-### ✅ **Dual Publishing**
-- Automatic publishing to both NPM and MCP Registry
-- Independent failure handling
-- Status notifications
-
-### ✅ **Beta Support**
-- Automated beta version generation
-- Version synchronization across files
-- Separate beta publishing pipeline
-
-### ✅ **Error Handling**
-- Detailed logging and artifact uploads
-- Status notifications
-- Independent job failure handling
-
-## Usage
-
-### Creating a Release
-1. Update version in `package.json`
-2. Create a GitHub Release
-3. Workflows automatically handle testing and publishing
-
-### Creating a Beta Release
-1. Create a branch named `release-beta/feature-name`
-2. Push to the branch
-3. Beta version will be automatically generated and published
-
-### Manual Validation
 ```bash
-npm run validate-mcp
+pnpm run validate-mcp
 ```
-
-## Dependencies
-
-- **NPM_TOKEN**: Required for NPM publishing
-- **GITHUB_TOKEN**: Automatically provided for Git operations
-- **OIDC**: Used for MCP Registry authentication
-
-## Monitoring
-
-All workflows include:
-- Detailed step logging
-- Artifact uploads for debugging
-- Status notifications
-- Error reporting

@@ -14,7 +14,7 @@ Create and manage Anki flashcards through the `anki-mcp-server` MCP integration.
 
 1. Anki desktop app is running
 2. [AnkiConnect](https://ankiweb.net/shared/info/2055492159) addon installed (default port 8765)
-3. MCP server configured in Claude:
+3. MCP server configured in your MCP client:
 
 ```json
 {
@@ -26,8 +26,6 @@ Create and manage Anki flashcards through the `anki-mcp-server` MCP integration.
   }
 }
 ```
-
-> **Note:** Do not use the `.mcpb` packaged version — it outputs Electron metadata to stdout which breaks the MCP stdio protocol.
 
 ## Quick Reference
 
@@ -122,6 +120,5 @@ Use `::` for hierarchy: `Language::English::Vocabulary`, `CS::Algorithms::Sortin
 |---|---|
 | Not calling `anki_get_note_type_info` first | Always check field names before creating notes with custom types |
 | Batches > 50 notes | Split into multiple calls of 10–20 |
-| Using `.mcpb` file | Use `npx -y anki-mcp-server` instead |
 | Anki not running | Start Anki, verify AnkiConnect is active |
 | Wrong field names | Field names are case-sensitive — use `anki_get_note_type_info` to verify |

@@ -43,22 +43,9 @@ Legacy unprefixed tool names such as `create_note` and `list_decks` remain calla
 
 ## Configuration
 
-### Install via Desktop Extension (.mcpb)
+### Configure an MCP client
 
-This repository supports Anthropic Desktop Extensions (MCPB). The easiest way to use this server in Claude Desktop is by installing the packaged `.mcpb` bundle.
-
-1. Generate the `.mcpb` file locally using the provided script:
-```bash
-npm run mcpb
-```
-
-2. Open Claude Desktop Settings → Extensions and drag the generated `.mcpb` file in, then click Install.
-
-This validates `manifest.json` and outputs a `.mcpb` archive you can install as above. Learn more about Desktop Extensions in Anthropic's announcement: [Desktop Extensions: One-click MCP server installation for Claude Desktop](https://www.anthropic.com/engineering/desktop-extensions).
-
-### Usage with Claude Desktop
-
-Add the server to your claude_desktop_config.json:
+Run the published server with `npx --yes anki-mcp-server`. Add it to an MCP client that supports stdio servers; for clients using `mcpServers`, the configuration is:
 
 ```json
 {
@@ -126,29 +113,13 @@ npx skills add nailuoGG/anki-mcp-server@anki
 
 Once installed, Claude Code will automatically use the skill when you ask it to create flashcards, manage decks, or batch import notes.
 
-> **Note:** Do not use the `.mcpb` packaged version as the MCP server — it outputs Electron metadata to stdout which breaks the MCP stdio protocol. Use `npx -y anki-mcp-server` instead.
-
 ## Development
-
-### Packaging a Desktop Extension (.mcpb)
-
-Create a distributable Desktop Extension bundle for Claude Desktop:
-
-```bash
-npm run mcpb
-```
-
-This will build the project and generate a `.mcpb` archive from the current repository, validating `manifest.json`. Test by dragging it into Claude Desktop's Extensions settings. Reference: [Desktop Extensions: One-click MCP server installation for Claude Desktop](https://www.anthropic.com/engineering/desktop-extensions).
 
 ### Publishing to MCP Registry
 
-This server is automatically published to the MCP Registry when a new version is released. The publishing process includes:
+The tag-triggered [release workflow](./.github/workflows/publish.yml) publishes the npm package and creates a GitHub Release. See [RELEASE.md](./RELEASE.md) for stable and beta releases.
 
-1. **Automated CI/CD**: GitHub Actions automatically publishes to both NPM and MCP Registry on successful releases
-2. **Schema Validation**: The `server.json` file is validated against the MCP schema before publishing
-3. **Version Synchronization**: Versions are kept in sync between `package.json`, `manifest.json`, and `server.json`
-4. **Comprehensive Testing**: Multi-version Node.js testing, linting, and validation before publishing
-5. **Beta Support**: Automated beta releases for testing new features
+The build keeps the versions in `package.json` and `server.json` synchronized. MCP Registry metadata is validated in CI; publishing it to the registry is a separate manual step.
 
 #### Manual Validation
 
